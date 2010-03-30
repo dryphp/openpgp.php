@@ -456,7 +456,32 @@ class OpenPGP_SecretSubkeyPacket extends OpenPGP_SecretKeyPacket {
  * @see http://tools.ietf.org/html/rfc4880#section-5.6
  */
 class OpenPGP_CompressedDataPacket extends OpenPGP_Packet {
-  // TODO
+  public $algorithm;
+  /* see http://tools.ietf.org/html/rfc4880#section-9.3 */
+  static $algorithms = array(0 => 'Uncompressed', 1 => 'ZIP', 2 => 'ZLIB', 3 => 'BZip2');
+  function read() {
+    $this->algorithm = ord($this->read_byte());
+    $this->data = $this->read_bytes($this->length);
+    switch($this->algorithm) {
+      case 0:
+        $this->data = OpenPGP_Message::parse($this->data);
+        break;
+      case 1:
+        $this->data = OpenPGP_Message::parse(gzinflate($this->data));
+        break;
+      case 2:
+        $this->data = OpenPGP_Message::parse(gzuncompress($this->data));
+        break;
+      case 3:
+        $this->data = OpenPGP_Message::parse(bzdecompress($this->data));
+        break;
+      default:
+        /* TODO error? */
+    }
+    if($this->data) {
+      $this->data = $this->data->packets;
+    }
+  }
 }
 
 /**
