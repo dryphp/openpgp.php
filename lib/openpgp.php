@@ -7,6 +7,7 @@
  * @package OpenPGP
  * @version 0.0.1
  * @author  Arto Bendiken <arto.bendiken@gmail.com>
+ * @author  Stephen Paul Weber <singpolyma@singpolyma.net>
  * @link    http://github.com/bendiken/openpgp-php
  */
 

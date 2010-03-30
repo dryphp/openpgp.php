@@ -39,6 +39,7 @@ Authors
 -------
 
 * [Arto Bendiken](mailto:arto.bendiken@gmail.com) - <http://ar.to/>
+* [Stephen Paul Weber](mailto:singpolyma@singpolyma.net) - <http://singpolyma.net/>
 
 License
 -------
