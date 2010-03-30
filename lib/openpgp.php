@@ -347,9 +347,9 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
         $this->key_algorithm = ord($this->read_byte());
         $this->hash_algorithm = ord($this->read_byte());
         $hashed_size = $this->read_unpacked(2, 'n');
-        $this->hashed_subpackets = $this->read_bytes($hashed_size);
+        $this->hashed_subpackets = self::get_subpackets($this->read_bytes($hashed_size));
         $unhashed_size = $this->read_unpacked(2, 'n');
-        $this->unhashed_subpackets = $this->read_bytes($unhashed_size);
+        $this->unhashed_subpackets = self::get_subpackets($this->read_bytes($unhashed_size));
         $this->hash_head = $this->read_unpacked(2, 'n');
         $this->size = $this->read_unpacked(2, 'n');
         $this->data = $this->read_bytes($this->size);
@@ -357,6 +357,181 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
         break;
     }
   }
+
+  /**
+   * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.1
+   */
+  static function get_subpackets($input) {
+    $subpackets = array();
+    while(($length = strlen($input)) > 0) {
+      $subpackets[] = self::get_subpacket($input);
+      if($length == strlen($input)) { // Parsing stuck?
+        break;
+      }
+    }
+    return $subpackets;
+  }
+
+  static function get_subpacket(&$input) {
+    $len = ord($input[0]);
+    $length_of_length = 1;
+    // if($len < 192) One octet length, no furthur processing
+    if($len > 190 && $len < 255) { // Two octet length
+      $length_of_length = 2;
+      $len = (($len - 192) << 8) + ord($input[1]) + 192;
+    }
+    if($len == 255) { // Five octet length
+      $length_of_length = 5;
+      $len = unpack('N', substr($input, 1, 4));
+    }
+    $input = substr($input, $length_of_length); // Chop off length header
+    $tag = ord($input[0]);
+    $class = self::class_for($tag);
+    if($class) {
+      $packet = new $class();
+      $packet->tag = $tag;
+      $packet->input = substr($input, 1, $len);
+      $packet->length = $len;
+      $packet->read();
+      unset($packet->input);
+    }
+    $input = substr($input, $len+1); // Chop off the data from this packet
+    return $packet;
+  }
+
+  static $subpacket_types = array(
+      //0 => 'Reserved',
+      //1 => 'Reserved',
+      2 => 'SignatureCreationTime',
+      3 => 'SignatureExpirationTime',
+      4 => 'ExportableCertification',
+      5 => 'TrustSignature',
+      6 => 'RegularExpression',
+      7 => 'Revocable',
+      //8 => 'Reserved',
+      9 => 'KeyExpirationTime',
+      //10 => 'Placeholder for backward compatibility',
+      11 => 'PreferredSymmetricAlgorithms',
+      12 => 'RevocationKey',
+      //13 => 'Reserved',
+      //14 => 'Reserved',
+      //15 => 'Reserved',
+      16 => 'Issuer',
+      //17 => 'Reserved',
+      //18 => 'Reserved',
+      //19 => 'Reserved',
+      20 => 'NotationData',
+      21 => 'PreferredHashAlgorithms',
+      22 => 'PreferredCompressionAlgorithms',
+      23 => 'KeyServerPreferences',
+      24 => 'PreferredKeyServer',
+      25 => 'PrimaryUserID',
+      26 => 'PolicyURI',
+      27 => 'KeyFlags',
+      28 => 'SignersUserID',
+      29 => 'ReasonforRevocation',
+      30 => 'Features',
+      31 => 'SignatureTarget',
+      32 => 'EmbeddedSignature',
+    );
+
+  static function class_for($tag) {
+    if(!self::$subpacket_types[$tag]) return NULL;
+    return 'OpenPGP_SignaturePacket_'.self::$subpacket_types[$tag].'Packet';
+  }
+
+}
+
+class OpenPGP_SignaturePacket_SignatureCreationTimePacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_ExportableCertificationPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_TrustSignaturePacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_RegularExpressionPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_RevocablePacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_KeyExpirationTimePacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_PreferredSymmetricAlgorithmsPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_RevocationKeyPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_PreferredHashAlgorithmsPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_PreferredCompressionAlgorithmsPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_KeyServerPreferencesPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_PreferredKeyServerPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_PrimaryUserIDPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_PolicyURIPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_KeyFlagsPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_SignersUserIDPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_ReasonforRevocationPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_FeaturesPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_SignatureTargetPacket extends OpenPGP_Packet {
+  // TODO
+}
+
+class OpenPGP_SignaturePacket_EmbeddedSignaturePacket extends OpenPGP_Packet {
+  // TODO
 }
 
 /**
