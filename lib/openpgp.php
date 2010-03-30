@@ -336,7 +336,27 @@ class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
  * @see http://tools.ietf.org/html/rfc4880#section-5.2
  */
 class OpenPGP_SignaturePacket extends OpenPGP_Packet {
-  // TODO
+  public $version, $signature_type, $hash_algorithm, $key_algorithm, $hashed_subpackets, $unhashed_subpackets, $hash_head;
+  function read() {
+    switch($this->version = ord($this->read_byte())) {
+      case 3:
+        // TODO: V3 sigs
+        break;
+      case 4:
+        $this->signature_type = ord($this->read_byte());
+        $this->key_algorithm = ord($this->read_byte());
+        $this->hash_algorithm = ord($this->read_byte());
+        $hashed_size = $this->read_unpacked(2, 'n');
+        $this->hashed_subpackets = $this->read_bytes($hashed_size);
+        $unhashed_size = $this->read_unpacked(2, 'n');
+        $this->unhashed_subpackets = $this->read_bytes($unhashed_size);
+        $this->hash_head = $this->read_unpacked(2, 'n');
+        $this->size = $this->read_unpacked(2, 'n');
+        $this->data = $this->read_bytes($this->size);
+        // TODO: parse hashed/unhashed subpackets
+        break;
+    }
+  }
 }
 
 /**
