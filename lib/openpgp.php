@@ -213,7 +213,17 @@ class OpenPGP_Packet {
    */
   static function parse_new_format($input) {
     $tag = ord($input[0]) & 63;
-    // TODO
+    $len = ord($input[1]);
+    if($len < 192) { // One octet length
+      return array($tag, 2, $len);
+    }
+    if($len > 191 && $len < 224) { // Two octet length
+      return array($tag, 3, (($len - 192) << 8) + ord($input[2]) + 192);
+    }
+    if($len == 255) { // Five octet length
+      return array($tag, 6, unpack('N', substr($input, 2, 4)));
+    }
+    // TODO: Partial body lengths. 1 << ($len & 0x1F)
   }
 
   /**
