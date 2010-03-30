@@ -23,6 +23,13 @@ Features
 * Parses OpenPGP messages into their constituent packets.
   * Supports both old-format (PGP 2.6.x) and new-format (RFC 4880) packets.
 
+Users
+-----
+
+OpenPGP.php is currently being used in the following projects:
+
+* <http://drupal.org/project/openpgp>
+
 Download
 --------
 
