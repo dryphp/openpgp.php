@@ -478,8 +478,15 @@ class OpenPGP_SignaturePacket_RevocationKeyPacket extends OpenPGP_Packet {
   // TODO
 }
 
+/**
+ * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.5
+ */
 class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_Packet {
-  // TODO
+  function read() {
+    for($i = 0; $i < 8; $i++) { // Store KeyID in Hex
+      $this->data .= dechex(ord($this->read_byte()));
+    }
+  }
 }
 
 class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_Packet {
