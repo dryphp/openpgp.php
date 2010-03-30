@@ -442,8 +442,13 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
 
 }
 
+/**
+ * @see  * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.4
+ */
 class OpenPGP_SignaturePacket_SignatureCreationTimePacket extends OpenPGP_Packet {
-  // TODO
+  function read() {
+    $this->data = $this->read_unpacked(4, 'N');
+  }
 }
 
 class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_Packet {
