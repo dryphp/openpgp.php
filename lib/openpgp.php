@@ -354,7 +354,17 @@ class OpenPGP_SymmetricSessionKeyPacket extends OpenPGP_Packet {
  * @see http://tools.ietf.org/html/rfc4880#section-5.4
  */
 class OpenPGP_OnePassSignaturePacket extends OpenPGP_Packet {
-  // TODO
+  public $version, $signature_type, $hash_algorithm, $key_algorithm, $key_id, $nested;
+  function read() {
+    $this->version = ord($this->read_byte());
+    $this->signature_type = ord($this->read_byte());
+    $this->hash_algorithm = ord($this->read_byte());
+    $this->key_algorithm = ord($this->read_byte());
+    for($i = 0; $i < 8; $i++) { // Store KeyID in Hex
+      $this->key_id .= dechex(ord($this->read_byte()));
+    }
+    $this->nested = ord($this->read_byte());
+  }
 }
 
 /**
