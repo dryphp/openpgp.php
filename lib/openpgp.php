@@ -508,7 +508,16 @@ class OpenPGP_MarkerPacket extends OpenPGP_Packet {
  * @see http://tools.ietf.org/html/rfc4880#section-5.9
  */
 class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
-  // TODO
+  public $format, $filename, $timestamp;
+  function read() {
+    $this->size = $this->length - 1 - 4;
+    $this->format = $this->read_byte();
+    $filename_length = ord($this->read_byte());
+    $this->size -= $filename_length;
+    $this->filename = $this->read_bytes($filename_length);
+    $this->timestamp = $this->read_unpacked(4, 'N');
+    $this->data = $this->read_bytes($this->size);
+  }
 }
 
 /**
