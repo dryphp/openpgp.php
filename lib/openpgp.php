@@ -414,12 +414,12 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     if($class) {
       $packet = new $class();
       $packet->tag = $tag;
-      $packet->input = substr($input, 1, $len);
-      $packet->length = $len;
+      $packet->input = substr($input, 1, $len-1);
+      $packet->length = $len-1;
       $packet->read();
       unset($packet->input);
     }
-    $input = substr($input, $len+1); // Chop off the data from this packet
+    $input = substr($input, $len); // Chop off the data from this packet
     return $packet;
   }
 
