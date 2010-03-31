@@ -141,6 +141,14 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
     $this->packets = $packets;
   }
 
+  function to_bytes() {
+    $bytes = '';
+    foreach($this as $p) {
+      $bytes .= $p->to_bytes();
+    }
+    return $bytes;
+  }
+
   // IteratorAggregate interface
 
   function getIterator() {
