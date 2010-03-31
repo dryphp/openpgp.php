@@ -413,6 +413,14 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     return $body;
   }
 
+  function key_algorithm_name() {
+    return OpenPGP_PublicKeyPacket::$algorithms[$this->key_algorithm];
+  }
+
+  function hash_algorithm_name() {
+    return self::$hash_algorithms[$this->hash_algorithm];
+  }
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.1
    */
