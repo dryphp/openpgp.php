@@ -482,6 +482,10 @@ class OpenPGP_SignaturePacket_SignatureCreationTimePacket extends OpenPGP_Signat
   function read() {
     $this->data = $this->read_timestamp();
   }
+
+  function body() {
+    return pack('N', $this->data);
+  }
 }
 
 class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_SignaturePacket_Subpacket {
