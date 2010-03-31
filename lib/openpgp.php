@@ -803,7 +803,53 @@ class OpenPGP_PublicSubkeyPacket extends OpenPGP_PublicKeyPacket {
  * @see http://tools.ietf.org/html/rfc4880#section-12
  */
 class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
-  // TODO
+  public $s2k_useage, $s2k_type, $s2k_hash_algorithm, $s2k_salt, $s2k_count, $symmetric_type, $private_hash, $encrypted_data;
+  function read() {
+    parent::read(); // All the fields from PublicKey
+    $this->s2k_useage = ord($this->read_byte());
+    if($this->s2k_useage == 255 || $this->s2k_useage == 254) {
+      $this->symmetric_type = ord($this->read_byte());
+      $this->s2k_type = ord($this->read_byte());
+      $this->s2k_hash_algorithm = ord($this->read_byte());
+      if($this->s2k_type == 1 || $this->s2k_type == 3) $this->s2k_salt = $this->read_bytes(8);
+      if($this->s2k_type == 3) {
+        $c = ord($this->read_byte());
+        $this->s2k_count = ((int)16 + ($c & 15)) << (($c >> 4) + 6);
+      }
+    } else if($this->s2k_useage > 0) {
+      $this->symmetric_type = $this->s2k_useage;
+    }
+    if($this->s2k_useage > 0) {
+      // TODO: IV of the same length as cipher's block size
+      $this->encrypted_data = $this->input; // Rest of input is MPIs and checksum (encrypted)
+    } else {
+      $this->data = $this->input; // Rest of input is MPIs and checksum
+      $this->key_from_data();
+    }
+  }
+
+  function key_from_data() {
+    if(!$this->data) return NULL; // Not decrypted yet
+    $this->input = $this->data;
+
+    static $key_fields = array(
+       1 => array('d', 'p', 'q', 'u'), // RSA
+      16 => array('x'),                // ELG-E
+      17 => array('x'),                // DSA
+    );
+    foreach($key_fields[$this->algorithm] as $field) {
+      $this->key[$field] = $this->read_mpi();
+    }
+
+    // TODO: Validate checksum?
+    if($this->s2k_useage == 254) { // 20 octet sha1 hash
+      $this->private_hash = $this->read_bytes(20);
+    } else { // two-octet checksum
+      $this->private_hash = $this->read_bytes(2);
+    }
+
+    unset($this->input);
+  }
 }
 
 /**
