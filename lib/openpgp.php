@@ -222,7 +222,7 @@ class OpenPGP_Packet {
       return array($tag, 3, (($len - 192) << 8) + ord($input[2]) + 192);
     }
     if($len == 255) { // Five octet length
-      return array($tag, 6, unpack('N', substr($input, 2, 4)));
+      return array($tag, 6, array_pop(unpack('N', substr($input, 2, 4))));
     }
     // TODO: Partial body lengths. 1 << ($len & 0x1F)
   }
@@ -427,7 +427,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     }
     if($len == 255) { // Five octet length
       $length_of_length = 5;
-      $len = unpack('N', substr($input, 1, 4));
+      $len = array_pop(unpack('N', substr($input, 1, 4)));
     }
     $input = substr($input, $length_of_length); // Chop off length header
     $tag = ord($input[0]);
