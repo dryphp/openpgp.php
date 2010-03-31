@@ -706,7 +706,7 @@ class OpenPGP_SecretSubkeyPacket extends OpenPGP_SecretKeyPacket {
  *
  * @see http://tools.ietf.org/html/rfc4880#section-5.6
  */
-class OpenPGP_CompressedDataPacket extends OpenPGP_Packet {
+class OpenPGP_CompressedDataPacket extends OpenPGP_Packet implements IteratorAggregate, ArrayAccess {
   public $algorithm;
   /* see http://tools.ietf.org/html/rfc4880#section-9.3 */
   static $algorithms = array(0 => 'Uncompressed', 1 => 'ZIP', 2 => 'ZLIB', 3 => 'BZip2');
@@ -733,6 +733,31 @@ class OpenPGP_CompressedDataPacket extends OpenPGP_Packet {
       $this->data = $this->data->packets;
     }
   }
+
+  // IteratorAggregate interface
+
+  function getIterator() {
+    return new ArrayIterator($this->data);
+  }
+
+  // ArrayAccess interface
+
+  function offsetExists($offset) {
+    return isset($this->data[$offset]);
+  }
+
+  function offsetGet($offset) {
+    return $this->data[$offset];
+  }
+
+  function offsetSet($offset, $value) {
+    return is_null($offset) ? $this->data[] = $value : $this->data[$offset] = $value;
+  }
+
+  function offsetUnset($offset) {
+    unset($this->data[$offset]);
+  }
+
 }
 
 /**
