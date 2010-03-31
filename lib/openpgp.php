@@ -352,8 +352,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
         $unhashed_size = $this->read_unpacked(2, 'n');
         $this->unhashed_subpackets = self::get_subpackets($this->read_bytes($unhashed_size));
         $this->hash_head = $this->read_unpacked(2, 'n');
-        $this->size = $this->read_unpacked(2, 'n');
-        $this->data = $this->read_bytes($this->size);
+        $this->data = $this->read_mpi();
         break;
     }
   }
@@ -447,7 +446,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
  */
 class OpenPGP_SignaturePacket_SignatureCreationTimePacket extends OpenPGP_Packet {
   function read() {
-    $this->data = $this->read_unpacked(4, 'N');
+    $this->data = $this->read_timestamp();
   }
 }
 
@@ -742,7 +741,7 @@ class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
     $filename_length = ord($this->read_byte());
     $this->size -= $filename_length;
     $this->filename = $this->read_bytes($filename_length);
-    $this->timestamp = $this->read_unpacked(4, 'N');
+    $this->timestamp = $this->read_timestamp();
     $this->data = $this->read_bytes($this->size);
   }
 }
