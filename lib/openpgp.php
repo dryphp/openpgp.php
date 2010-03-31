@@ -263,6 +263,22 @@ class OpenPGP_Packet {
   function read() {
   }
 
+  function body() {
+    return $this->data; // Will normally be overridden by subclasses
+  }
+
+  function header_and_body() {
+    $body = $this->body(); // Get body first, we will need it's length
+    $tag = chr($this->tag | 0xC0); // First two bits are 1 for new packet format
+    $size = chr(255).pack('N', strlen($body)); // Use 5-octet lengths
+    return array('header' => $tag.$size, 'body' => $body);
+  }
+
+  function to_bytes() {
+    $data = $this->header_and_body();
+    return $data['header'].$data['body'];
+  }
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-3.5
    */
