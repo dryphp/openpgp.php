@@ -734,6 +734,18 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
         return $this->fingerprint = sha1(implode('', $material));
     }
   }
+
+  static $algorithms = array(
+       1 => 'RSA',
+       2 => 'RSA',
+       3 => 'RSA',
+      16 => 'ELGAMAL',
+      17 => 'DSA',
+      18 => 'ECC',
+      19 => 'ECDSA',
+      21 => 'DH'
+    );
+
 }
 
 /**
