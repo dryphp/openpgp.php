@@ -454,6 +454,16 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     return $packet;
   }
 
+  static $hash_algorithms = array(
+       1 => 'MD5',
+       2 => 'SHA1',
+       3 => 'RIPEMD160',
+       8 => 'SHA256',
+       9 => 'SHA384',
+      10 => 'SHA512',
+      11 => 'SHA224'
+    );
+
   static $subpacket_types = array(
       //0 => 'Reserved',
       //1 => 'Reserved',
