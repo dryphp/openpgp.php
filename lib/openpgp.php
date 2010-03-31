@@ -354,7 +354,6 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
         $this->hash_head = $this->read_unpacked(2, 'n');
         $this->size = $this->read_unpacked(2, 'n');
         $this->data = $this->read_bytes($this->size);
-        // TODO: parse hashed/unhashed subpackets
         break;
     }
   }
