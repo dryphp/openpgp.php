@@ -382,6 +382,27 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     }
   }
 
+  function body() {
+    $body = chr(4).chr($this->signature_type).chr($this->key_algorithm).chr($this->hash_algorithm);
+
+    $hashed_subpackets = '';
+    foreach($this->hashed_subpackets as $p) {
+      $hashed_subpackets .= $p->to_bytes();
+    }
+    $body .= pack('n', strlen($hashed_subpackets)).$hashed_subpackets;
+
+    $unhashed_subpackets = '';
+    foreach($this->unhashed_subpackets as $p) {
+      $unhashed_subpackets .= $p->to_bytes();
+    }
+    $body .= pack('n', strlen($unhashed_subpackets)).$unhashed_subpackets;
+
+    $body .= pack('n', $this->hash_head);
+    $body .= pack('n', floor((strlen($this->data) - 7)*8)).$this->data;
+
+    return $body;
+  }
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.1
    */
