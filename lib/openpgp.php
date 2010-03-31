@@ -466,51 +466,60 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
 
 }
 
+class OpenPGP_SignaturePacket_Subpacket extends OpenPGP_Packet {
+  function header_and_body() {
+    $body = $this->body(); // Get body first, we will need it's length
+    $size = chr(255).pack('N', strlen($body)+1); // Use 5-octet lengths + 1 for tag as first packet body octet
+    $tag = chr($this->tag);
+    return array('header' => $size.$tag, 'body' => $body);
+  }
+}
+
 /**
- * @see  * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.4
+ * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.4
  */
-class OpenPGP_SignaturePacket_SignatureCreationTimePacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_SignatureCreationTimePacket extends OpenPGP_SignaturePacket_Subpacket {
   function read() {
     $this->data = $this->read_timestamp();
   }
 }
 
-class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_ExportableCertificationPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_ExportableCertificationPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_TrustSignaturePacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_TrustSignaturePacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_RegularExpressionPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_RegularExpressionPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_RevocablePacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_RevocablePacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_KeyExpirationTimePacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_KeyExpirationTimePacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_PreferredSymmetricAlgorithmsPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_PreferredSymmetricAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_RevocationKeyPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_RevocationKeyPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
 /**
  * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.5
  */
-class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_SignaturePacket_Subpacket {
   function read() {
     for($i = 0; $i < 8; $i++) { // Store KeyID in Hex
       $this->data .= dechex(ord($this->read_byte()));
@@ -518,55 +527,55 @@ class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_Packet {
   }
 }
 
-class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_PreferredHashAlgorithmsPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_PreferredHashAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_PreferredCompressionAlgorithmsPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_PreferredCompressionAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_KeyServerPreferencesPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_KeyServerPreferencesPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_PreferredKeyServerPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_PreferredKeyServerPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_PrimaryUserIDPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_PrimaryUserIDPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_PolicyURIPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_PolicyURIPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_KeyFlagsPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_KeyFlagsPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_SignersUserIDPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_SignersUserIDPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_ReasonforRevocationPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_ReasonforRevocationPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_FeaturesPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_FeaturesPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_SignatureTargetPacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_SignatureTargetPacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
-class OpenPGP_SignaturePacket_EmbeddedSignaturePacket extends OpenPGP_Packet {
+class OpenPGP_SignaturePacket_EmbeddedSignaturePacket extends OpenPGP_SignaturePacket_Subpacket {
   // TODO
 }
 
