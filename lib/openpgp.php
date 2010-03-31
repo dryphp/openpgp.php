@@ -338,6 +338,7 @@ class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
  */
 class OpenPGP_SignaturePacket extends OpenPGP_Packet {
   public $version, $signature_type, $hash_algorithm, $key_algorithm, $hashed_subpackets, $unhashed_subpackets, $hash_head;
+  public $trailer; // This is the literal bytes that get tacked on the end of the message when verifying the signature
   function read() {
     switch($this->version = ord($this->read_byte())) {
       case 3:
@@ -347,10 +348,18 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
         $this->signature_type = ord($this->read_byte());
         $this->key_algorithm = ord($this->read_byte());
         $this->hash_algorithm = ord($this->read_byte());
+        $this->trailer = chr(4).chr($this->signature_type).chr($this->key_algorithm).chr($this->hash_algorithm);
+
         $hashed_size = $this->read_unpacked(2, 'n');
-        $this->hashed_subpackets = self::get_subpackets($this->read_bytes($hashed_size));
+        $hashed_subpackets = $this->read_bytes($hashed_size);
+        $this->trailer .= pack('n', $hashed_size).$hashed_subpackets;
+        $this->hashed_subpackets = self::get_subpackets($hashed_subpackets);
+
+        $this->trailer .= chr(4).chr(0xff).pack('N', 6 + $hashed_size);
+
         $unhashed_size = $this->read_unpacked(2, 'n');
         $this->unhashed_subpackets = self::get_subpackets($this->read_bytes($unhashed_size));
+
         $this->hash_head = $this->read_unpacked(2, 'n');
         $this->data = $this->read_mpi();
         break;
