@@ -920,6 +920,15 @@ class OpenPGP_MarkerPacket extends OpenPGP_Packet {
  */
 class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
   public $format, $filename, $timestamp;
+
+  function __construct($data=NULL, $opt=array()) {
+    parent::__construct();
+    $this->data = $data;
+    $this->format = $opt['format'] ? $opt['format'] : 'b';
+    $this->filename = $opt['filename'] ? $opt['filename'] : 'data';
+    $this->timestamp = $opt['timestamp'] ? $opt['timestamp'] : time();
+  }
+
   function read() {
     $this->size = $this->length - 1 - 4;
     $this->format = $this->read_byte();
