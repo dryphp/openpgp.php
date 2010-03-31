@@ -790,15 +790,12 @@ class OpenPGP_CompressedDataPacket extends OpenPGP_Packet implements IteratorAgg
       default:
         /* TODO error? */
     }
-    if($this->data) {
-      $this->data = $this->data->packets;
-    }
   }
 
   // IteratorAggregate interface
 
   function getIterator() {
-    return new ArrayIterator($this->data);
+    return new ArrayIterator($this->data->packets);
   }
 
   // ArrayAccess interface
