@@ -792,6 +792,27 @@ class OpenPGP_CompressedDataPacket extends OpenPGP_Packet implements IteratorAgg
     }
   }
 
+  function body() {
+    $body = chr($this->algorithm);
+    switch($this->algorithm) {
+      case 0:
+        $body .= $this->data->to_bytes();
+        break;
+      case 1:
+        $body .= gzdeflate($this->data->to_bytes());
+        break;
+      case 2:
+        $body .= gzcompress($this->data->to_bytes());
+        break;
+      case 3:
+        $body .= bzcompress($this->data->to_bytes());
+        break;
+      default:
+        /* TODO error? */
+    }
+    return $body;
+  }
+
   // IteratorAggregate interface
 
   function getIterator() {
