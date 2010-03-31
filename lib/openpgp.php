@@ -149,6 +149,32 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
     return $bytes;
   }
 
+  /**
+   * Function to verify signature number $index
+   * $verifiers is an array of callbacks formatted like array('RSA' => array('SHA256' => CALLBACK)) that take two parameters: message and signature
+   */
+  function verify($verifiers, $index=0) {
+    $msg = $this;
+    while($msg[0] instanceof OpenPGP_CompressedDataPacket) $msg = $msg[0];
+
+    $i = 0;
+    foreach($msg as $p) {
+      if($p instanceof OpenPGP_SignaturePacket) {
+        if($i == $index) $signature_packet = $p;
+        $i++;
+      }
+      if($p instanceof OpenPGP_LiteralDataPacket) $data_packet = $p;
+      if($signature_packet && $data_packet) break;
+    }
+
+    if(!$signature_packet || !$data_packet) return NULL; // No signature or no data
+
+    $verifier = $verifiers[$signature_packet->key_algorithm_name()][$signature_packet->hash_algorithm_name()];
+    if(!$verifier) return NULL; // No verifier
+
+    return call_user_func($verifier, $data_packet->data.$signature_packet->trailer, $signature_packet->data);
+  }
+
   // IteratorAggregate interface
 
   function getIterator() {
