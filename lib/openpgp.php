@@ -529,6 +529,14 @@ class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_SignaturePacket_Subpa
       $this->data .= dechex(ord($this->read_byte()));
     }
   }
+
+  function body() {
+    $bytes = '';
+    for($i = 0; $i < strlen($this->data); $i += 2) {
+      $bytes .= chr(hexdec($this->data{$i}.$this->data{$i+1}));
+    }
+    return $bytes;
+  }
 }
 
 class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_SignaturePacket_Subpacket {
