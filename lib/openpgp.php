@@ -769,6 +769,10 @@ class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
     $this->timestamp = $this->read_timestamp();
     $this->data = $this->read_bytes($this->size);
   }
+
+  function body() {
+    return $this->format.chr(strlen($this->filename)).$this->filename.pack('N', $this->timestamp).$this->data;
+  }
 }
 
 /**
