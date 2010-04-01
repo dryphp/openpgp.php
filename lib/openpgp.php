@@ -543,6 +543,11 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
 }
 
 class OpenPGP_SignaturePacket_Subpacket extends OpenPGP_Packet {
+  function __construct($data=NULL) {
+    parent::__construct($data);
+    $this->tag = array_search(substr(substr(get_class($this), 8+16), 0, -6), OpenPGP_SignaturePacket::$subpacket_types);
+  }
+
   function header_and_body() {
     $body = $this->body(); // Get body first, we will need it's length
     $size = chr(255).pack('N', strlen($body)+1); // Use 5-octet lengths + 1 for tag as first packet body octet
