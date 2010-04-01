@@ -414,6 +414,17 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $this->data = $data; // Store to-be-signed data in here until the signing happens
   }
 
+  /**
+   * $this->data must be set to the data to sign (done by constructor)
+   * $signers in the same format as $verifiers for OpenPGP_Message.
+   */
+  function sign_data($signers) {
+    $this->trailer = $this->body(true);
+    $signer = $signers[$this->key_algorithm_name()][$this->hash_algorithm_name()];
+    $this->data = call_user_func($signer, $this->data.$this->trailer);
+    $this->hash_head = array_pop(unpack('n', substr($this->data, 0, 2)));
+  }
+
   function read() {
     switch($this->version = ord($this->read_byte())) {
       case 3:
