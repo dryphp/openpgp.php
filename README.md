@@ -22,6 +22,7 @@ Features
 * Encodes and decodes ASCII-armored OpenPGP messages.
 * Parses OpenPGP messages into their constituent packets.
   * Supports both old-format (PGP 2.6.x) and new-format (RFC 4880) packets.
+* Helper class for verifying and signing messages using Crypt_RSA from <http://phpseclib.sourceforge.net>
 
 Users
 -----
