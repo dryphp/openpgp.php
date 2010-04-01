@@ -172,6 +172,7 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
     $verifier = $verifiers[$signature_packet->key_algorithm_name()][$signature_packet->hash_algorithm_name()];
     if(!$verifier) return NULL; // No verifier
 
+    $data_packet->normalize();
     return call_user_func($verifier, $data_packet->data.$signature_packet->trailer, $signature_packet->data);
   }
 
