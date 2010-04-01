@@ -489,6 +489,16 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     return self::$hash_algorithms[$this->hash_algorithm];
   }
 
+  function issuer() {
+    foreach($this->hashed_subpackets as $p) {
+      if($p instanceof OpenPGP_SignaturePacket_IssuerPacket) return $p->data;
+    }
+    foreach($this->unhashed_subpackets as $p) {
+      if($p instanceof OpenPGP_SignaturePacket_IssuerPacket) return $p->data;
+    }
+    return NULL;
+  }
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-5.2.3.1
    */
