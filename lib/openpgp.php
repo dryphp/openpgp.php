@@ -420,7 +420,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     }
   }
 
-  function body() {
+  function body($trailer=false) {
     $body = chr(4).chr($this->signature_type).chr($this->key_algorithm).chr($this->hash_algorithm);
 
     $hashed_subpackets = '';
@@ -428,6 +428,9 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
       $hashed_subpackets .= $p->to_bytes();
     }
     $body .= pack('n', strlen($hashed_subpackets)).$hashed_subpackets;
+
+    // The trailer is just the top of the body plus some crap
+    if($trailer) return $body.chr(4).chr(0xff).pack('N', strlen($body));
 
     $unhashed_subpackets = '';
     foreach((array)$this->unhashed_subpackets as $p) {
