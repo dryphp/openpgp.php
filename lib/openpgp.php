@@ -607,7 +607,7 @@ class OpenPGP_SignaturePacket_RevocationKeyPacket extends OpenPGP_SignaturePacke
 class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_SignaturePacket_Subpacket {
   function read() {
     for($i = 0; $i < 8; $i++) { // Store KeyID in Hex
-      $this->data .= dechex(ord($this->read_byte()));
+      $this->data .= sprintf('%02X',ord($this->read_byte()));
     }
   }
 
@@ -694,7 +694,7 @@ class OpenPGP_OnePassSignaturePacket extends OpenPGP_Packet {
     $this->hash_algorithm = ord($this->read_byte());
     $this->key_algorithm = ord($this->read_byte());
     for($i = 0; $i < 8; $i++) { // Store KeyID in Hex
-      $this->key_id .= dechex(ord($this->read_byte()));
+      $this->key_id .= sprintf('%02X',ord($this->read_byte()));
     }
     $this->nested = ord($this->read_byte());
   }
