@@ -816,6 +816,18 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
     return $sigs;
   }
 
+  // Find expiry time of this key based on the self signatures in a message
+  function expires($message) {
+    foreach($this->self_signatures($message) as $p) {
+      foreach(array_merge($p->hashed_subpackets, $p->unhashed_subpackets) as $s) {
+        if($s instanceof OpenPGP_SignaturePacket_KeyExpirationTimePacket) {
+          return $this->timestamp + $s->data;
+        }
+      }
+    }
+    return NULL; // Never expires
+  }
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-5.5.2
    */
