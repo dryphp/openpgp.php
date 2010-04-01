@@ -783,6 +783,27 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
   public $version, $timestamp, $algorithm;
   public $key, $key_id, $fingerprint;
 
+  // Find self signatures in a message, these often contain metadata about the key
+  function self_signatures($message) {
+    $sigs = array();
+    $keyid16 = strtoupper(substr($this->fingerprint, -16));
+    foreach($message as $p) {
+      if($p instanceof OpenPGP_SignaturePacket) {
+        if(strtoupper($p->issuer()) == $keyid16) {
+          $sigs[] = $p;
+        } else {
+          foreach(array_merge($p->hashed_subpackets, $p->unhashed_subpackets) as $s) {
+            if($s instanceof OpenPGP_SignaturePacket_EmbeddedSignaturePacket && strtoupper($s->issuer()) == $keyid16) {
+              $sigs[] = $p;
+              break;
+            }
+          }
+        }
+      } else if(count($sigs)) break; // After we've seen a self sig, the next non-sig stop all self-sigs
+    }
+    return $sigs;
+  }
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-5.5.2
    */
