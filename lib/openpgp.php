@@ -292,8 +292,9 @@ class OpenPGP_Packet {
     return array($tag, $head_length, $data_length);
   }
 
-  function __construct() {
+  function __construct($data=NULL) {
     $this->tag = array_search(substr(substr(get_class($this), 8), 0, -6), self::$tags);
+    $this->data = $data;
   }
 
   function read() {
