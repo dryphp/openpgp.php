@@ -18,41 +18,52 @@ class OpenPGP_Crypt_RSA {
   // Construct a wrapper object from a key or a message packet
   function __construct($packet) {
     if(!is_object($packet)) $packet = OpenPGP_Message::parse($packet);
-    if($packet[0] instanceof OpenPGP_PublicKeyPacket) $packet = $packet[0];
-    if($packet instanceof OpenPGP_PublicKeyPacket) { // If it's a key (other keys are subclasses of this one)
+    if($packet instanceof OpenPGP_PublicKeyPacket || $packet[0] instanceof OpenPGP_PublicKeyPacket) { // If it's a key (other keys are subclasses of this one)
       $this->key = $packet;
     } else {
       $this->message = $packet;
     }
   }
 
-  // Get Crypt_RSA for the public key
-  function public_key() {
+  function key($keyid=NULL) {
     if(!$this->key) return NULL; // No key
-    return self::convert_public_key($this->key);
+    if($this->key instanceof OpenPGP_Message) {
+      foreach($this->key as $p) {
+        if($p instanceof OpenPGP_PublicKeyPacket) {
+          if(!$keyid || strtoupper(substr($p->fingerprint, strlen($keyid)*-1)) == strtoupper($keyid)) return $p;
+        }
+      }
+    }
+    return $this->key;
+  }
+
+  // Get Crypt_RSA for the public key
+  function public_key($keyid=NULL) {
+    return self::convert_public_key($this->key($keyid));
   }
 
   // Get Crypt_RSA for the private key
-  function private_key() {
-    if(!$this->key) return NULL; // No key
-    return self::convert_private_key($this->key);
+  function private_key($keyid=NULL) {
+    return self::convert_private_key($this->key($keyid));
   }
 
   // Pass a message to verify with this key, or a key (OpenPGP or Crypt_RSA) to check this message with
   // Second optional parameter to specify which signature to verify (if there is more than one)
   function verify($packet, $index=0) {
     if(!is_object($packet)) $packet = OpenPGP_Message::parse($packet);
-    if($packet[0] instanceof OpenPGP_PublicKeyPacket) $packet = $packet[0];
-    if($packet instanceof OpenPGP_Message) {
-      $key = $this->public_key();
+    if($packet instanceof OpenPGP_Message && !($packet[0] instanceof OpenPGP_PublicKeyPacket)) {
       list($signature_packet, $data_packet) = $packet->signature_and_data($index);
+      $key = $this->public_key($signature_packet->issuer());
       if(!$key || $signature_packet->key_algorithm_name() != 'RSA') return NULL;
       $key->setHash(strtolower($signature_packet->hash_algorithm_name()));
       return $packet->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => array($key, 'verify'))));
     } else {
       list($signature_packet, $data_packet) = $this->message->signature_and_data($index);
       if(!$this->message || $signature_packet->key_algorithm_name() != 'RSA') return NULL;
-      if(!($packet instanceof Crypt_RSA)) $packet = self::convert_public_key($packet);
+      if(!($packet instanceof Crypt_RSA)) {
+        $packet = new self($packet);
+        $packet = $packet->public_key($signature_packet->issuer());
+      }
       $packet->setHash(strtolower($signature_packet->hash_algorithm_name()));
       return $this->message->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => array($packet, 'verify'))));
     }
@@ -61,21 +72,21 @@ class OpenPGP_Crypt_RSA {
   // Pass a message to sign with this key, or a secret key to sign this message with
   // Second parameter is hash algorithm to use (default SHA256)
   // Third parameter is the 16-digit key ID to use... defaults to the key id in the key packet
-  function sign($packet, $hash='SHA256', $key_id=NULL) {
+  function sign($packet, $hash='SHA256', $keyid=NULL) {
     if(!is_object($packet)) {
       if($this->key) {
         $packet = new OpenPGP_LiteralDataPacket($packet);
       } else {
         $packet = OpenPGP_Message::parse($packet);
-        $packet = $packet[0];
       }
     }
 
-    if($packet instanceof OpenPGP_SecretKeyPacket || $packet instanceof Crypt_RSA) {
+    if($packet instanceof OpenPGP_SecretKeyPacket || $packet instanceof Crypt_RSA
+       || ($packet instanceof ArrayAccess && $packet[0] instanceof OpenPGP_SecretKeyPacket)) {
       $key = $packet;
       $message = $this->message;
     } else {
-      $key = $this->private_key();
+      $key = $this->key;
       $message = $packet;
     }
 
@@ -85,12 +96,15 @@ class OpenPGP_Crypt_RSA {
       list($dummy, $message) = $message->signature_and_data();
     }
 
-    if(!$key_id) $key_id = substr($key->fingerprint, -16, 16);
-    if($key instanceof OpenPGP_SecretKeyPacket) $key = self::convert_private_key($key);
+    if(!($key instanceof Crypt_RSA)) {
+      $key = new self($key);
+      if(!$keyid) $keyid = substr($key->key()->fingerprint, -16, 16);
+      $key = $key->private_key($keyid);
+    }
     $key->setHash(strtolower($hash));
 
     $sig = new OpenPGP_SignaturePacket($message, 'RSA', strtoupper($hash));
-    $sig->hashed_subpackets[] = new OpenPGP_SignaturePacket_IssuerPacket($key_id);
+    $sig->hashed_subpackets[] = new OpenPGP_SignaturePacket_IssuerPacket($keyid);
     $sig->sign_data(array('RSA' => array($hash => array($key, 'sign'))));
 
     return new OpenPGP_Message(array($sig, $message));
