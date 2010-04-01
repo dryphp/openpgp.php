@@ -798,16 +798,19 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
       case 3:
         return $this->fingerprint = md5($this->key['n'] . $this->key['e']);
       case 4:
-        $material = array(
-          chr(0x99), pack('n', $this->length),
+        $head = array(
+          chr(0x99), NULL,
           chr($this->version), pack('N', $this->timestamp),
           chr($this->algorithm),
         );
+        $material = array();
         foreach ($this->key as $data) {
           $material[] = pack('n', OpenPGP::bitlength($data));
           $material[] = $data;
         }
-        return $this->fingerprint = sha1(implode('', $material));
+        $material = implode('', $material);
+        $head[1] = pack('n', 6 + strlen($material));
+        return $this->fingerprint = sha1(implode('',$head).$material);
     }
   }
 
