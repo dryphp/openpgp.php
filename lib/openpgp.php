@@ -647,7 +647,13 @@ class OpenPGP_SignaturePacket_RevocablePacket extends OpenPGP_SignaturePacket_Su
 }
 
 class OpenPGP_SignaturePacket_KeyExpirationTimePacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = $this->read_timestamp();
+  }
+
+  function body() {
+    return pack('N', $this->data);
+  }
 }
 
 class OpenPGP_SignaturePacket_PreferredSymmetricAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
