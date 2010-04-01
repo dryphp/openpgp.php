@@ -981,6 +981,12 @@ class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
     $this->timestamp = $opt['timestamp'] ? $opt['timestamp'] : time();
   }
 
+  function normalize() {
+    if($opt['format'] == 'u' || $opt['format'] == 't') { // Normalize line endings
+      $this->data = str_replace("\n", "\r\n", str_replace("\r", "\n", str_replace("\r\n", "\n", $this->data)));
+    }
+  }
+
   function read() {
     $this->size = $this->length - 1 - 4;
     $this->format = $this->read_byte();
