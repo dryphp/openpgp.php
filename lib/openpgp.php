@@ -393,6 +393,27 @@ class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
 class OpenPGP_SignaturePacket extends OpenPGP_Packet {
   public $version, $signature_type, $hash_algorithm, $key_algorithm, $hashed_subpackets, $unhashed_subpackets, $hash_head;
   public $trailer; // This is the literal bytes that get tacked on the end of the message when verifying the signature
+
+  function __construct($data=NULL, $key_algorithm=NULL, $hash_algorithm=NULL) {
+    parent::__construct();
+    $this->version = 4; // Default to version 4 sigs
+    if(is_string($this->hash_algorithm = $hash_algorithm)) {
+      $this->hash_algorithm = array_search($this->hash_algorithm, self::$hash_algorithms);
+    }
+    if(is_string($this->key_algorithm = $key_algorithm)) {
+      $this->key_algorithm = array_search($this->key_algorithm, OpenPGP_PublicKeyPacket::$algorithms);
+    }
+    if($data) { // If we have any data, set up the creation time
+      $this->hashed_subpackets = array(new OpenPGP_SignaturePacket_SignatureCreationTimePacket(time()));
+    }
+    if($data instanceof OpenPGP_LiteralDataPacket) {
+      $this->signature_type = ($data->format == 'b') ? 0x00 : 0x01;
+      $data->normalize();
+      $data = $data->data;
+    }
+    $this->data = $data; // Store to-be-signed data in here until the signing happens
+  }
+
   function read() {
     switch($this->version = ord($this->read_byte())) {
       case 3:
