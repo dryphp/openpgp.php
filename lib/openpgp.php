@@ -436,7 +436,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $body .= pack('n', strlen($unhashed_subpackets)).$unhashed_subpackets;
 
     $body .= pack('n', $this->hash_head);
-    $body .= pack('n', floor((strlen($this->data) - 7)*8)).$this->data;
+    $body .= pack('n', strlen($this->data)*8).$this->data;
 
     return $body;
   }
