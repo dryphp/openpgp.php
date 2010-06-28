@@ -848,12 +848,7 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
    * @see http://tools.ietf.org/html/rfc4880#section-5.5.2
    */
   function read_key_material() {
-    static $key_fields = array(
-       1 => array('n', 'e'),           // RSA
-      16 => array('p', 'g', 'y'),      // ELG-E
-      17 => array('p', 'q', 'g', 'y'), // DSA
-    );
-    foreach ($key_fields[$this->algorithm] as $field) {
+    foreach (self::$key_fields[$this->algorithm] as $field) {
       $this->key[$field] = $this->read_mpi();
     }
     $this->key_id = substr($this->fingerprint(), -8);
@@ -875,15 +870,21 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
           chr($this->algorithm),
         );
         $material = array();
-        foreach ($this->key as $data) {
-          $material[] = pack('n', OpenPGP::bitlength($data));
-          $material[] = $data;
+        foreach (self::$key_fields[$this->algorithm] as $i) {
+          $material[] = pack('n', OpenPGP::bitlength($this->key[$i]));
+          $material[] = $this->key[$i];
         }
         $material = implode('', $material);
         $head[1] = pack('n', 6 + strlen($material));
         return $this->fingerprint = sha1(implode('',$head).$material);
     }
   }
+
+  static $key_fields = array(
+     1 => array('n', 'e'),           // RSA
+    16 => array('p', 'g', 'y'),      // ELG-E
+    17 => array('p', 'q', 'g', 'y'), // DSA
+  );
 
   static $algorithms = array(
        1 => 'RSA',
