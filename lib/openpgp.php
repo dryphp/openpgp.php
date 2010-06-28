@@ -1093,7 +1093,7 @@ class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
   }
 
   function normalize() {
-    if($opt['format'] == 'u' || $opt['format'] == 't') { // Normalize line endings
+    if($this->format == 'u' || $this->format == 't') { // Normalize line endings
       $this->data = str_replace("\n", "\r\n", str_replace("\r", "\n", str_replace("\r\n", "\n", $this->data)));
     }
   }
