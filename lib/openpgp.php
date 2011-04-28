@@ -29,7 +29,7 @@ class OpenPGP {
       $text .= $key . ': ' . (string)$value . "\n";
     }
     $text .= "\n" . base64_encode($data);
-    $text .= '=' . substr(pack('N', self::crc24($data)), 1) . "\n";
+    $text .= "\n".'=' . substr(pack('N', self::crc24($data)), 1) . "\n";
     $text .= self::footer($marker) . "\n";
     return $text;
   }
