@@ -985,16 +985,19 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
     }
   }
 
+  static $secret_key_fields = array(
+     1 => array('d', 'p', 'q', 'u'), // RSA
+     2 => array('d', 'p', 'q', 'u'), // RSA-E
+     3 => array('d', 'p', 'q', 'u'), // RSA-S
+    16 => array('x'),                // ELG-E
+    17 => array('x'),                // DSA
+  );
+
   function key_from_data() {
     if(!$this->data) return NULL; // Not decrypted yet
     $this->input = $this->data;
 
-    static $key_fields = array(
-       1 => array('d', 'p', 'q', 'u'), // RSA
-      16 => array('x'),                // ELG-E
-      17 => array('x'),                // DSA
-    );
-    foreach($key_fields[$this->algorithm] as $field) {
+    foreach(self::$secret_key_fields[$this->algorithm] as $field) {
       $this->key[$field] = $this->read_mpi();
     }
 
