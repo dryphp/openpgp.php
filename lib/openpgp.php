@@ -415,6 +415,11 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
       $this->signature_type = ($data->format == 'b') ? 0x00 : 0x01;
       $data->normalize();
       $data = $data->data;
+    } else if($data instanceof OpenPGP_Message && $data[0] instanceof OpenPGP_PublicKeyPacket) {
+      // $data is a message with PublicKey first, UserID second
+      $key = implode('', $data[0]->fingerprint_material());
+      $user_id = $data[1]->body();
+      $data = $key . chr(0xB4) . pack('N', strlen($user_id)) . $user_id;
     }
     $this->data = $data; // Store to-be-signed data in here until the signing happens
   }
