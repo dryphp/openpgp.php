@@ -110,6 +110,35 @@ class OpenPGP_Crypt_RSA {
     return new OpenPGP_Message(array($sig, $message));
   }
 
+  // Pass a message with a key and userid packet to sign
+  function sign_key_userid($packet, $hash='SHA256', $keyid=NULL) {
+    if(is_array($packet)) {
+      $packet = new OpenPGP_Message($packet);
+    } else if(!is_object($packet)) {
+      $packet = OpenPGP_Message::parse($packet);
+    }
+
+    $key = $this->private_key($keyid);
+    if(!$key || !$packet) return NULL; // Missing some data
+
+    if(!$keyid) $keyid = substr($this->key->fingerprint, -16);
+    $key->setHash(strtolower($hash));
+
+    $sig = $packet->signature_and_data();
+    $sig = $sig[1];
+    if(!$sig) {
+      $sig = new OpenPGP_SignaturePacket($packet, 'RSA', strtoupper($hash)); 
+      $sig->signature_type = 0x13;
+      $sig->hashed_subpackets[] = new OpenPGP_SignaturePacket_KeyFlagsPacket(array(0x01, 0x02));
+      $sig->hashed_subpackets[] = new OpenPGP_SignaturePacket_IssuerPacket($keyid);
+      $packet[] = $sig;
+    }
+
+    $sig->sign_data(array('RSA' => array($hash => array($key, 'sign'))));
+
+    return $packet;
+  }
+
   static function crypt_rsa_key($mod, $exp, $hash='SHA256') {
     $rsa = new Crypt_RSA();
     $rsa->signatureMode = CRYPT_RSA_SIGNATURE_PKCS1;
