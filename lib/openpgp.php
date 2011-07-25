@@ -712,7 +712,25 @@ class OpenPGP_SignaturePacket_PolicyURIPacket extends OpenPGP_SignaturePacket_Su
 }
 
 class OpenPGP_SignaturePacket_KeyFlagsPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function __construct($flags=array()) {
+    parent::__construct();
+    $this->flags = $flags;
+  }
+
+  function read() {
+    $this->flags = array();
+    while($this->input) {
+      $this->flags[] = ord($this->read_byte());
+    }
+  }
+
+  function body() {
+    $bytes = '';
+    foreach($this->flags as $f) {
+      $bytes .= chr($f);
+    }
+    return $bytes;
+  }
 }
 
 class OpenPGP_SignaturePacket_SignersUserIDPacket extends OpenPGP_SignaturePacket_Subpacket {
