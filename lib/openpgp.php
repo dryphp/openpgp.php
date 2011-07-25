@@ -814,6 +814,17 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
   public $version, $timestamp, $algorithm;
   public $key, $key_id, $fingerprint;
 
+  function __construct($key=array(), $algorithm='RSA', $timestamp=NULL, $version=4) {
+    parent::__construct();
+    $this->key = $key;
+    if(is_string($this->algorithm = $algorithm)) {
+      $this->algorithm = array_search($this->algorithm, self::$algorithms);
+    }
+    $this->timestamp = $timestamp ? $timestamp : time();
+    $this->version = $version;
+    $this->key_id = substr($this->fingerprint(), -8);
+  }
+
   // Find self signatures in a message, these often contain metadata about the key
   function self_signatures($message) {
     $sigs = array();
@@ -904,9 +915,9 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
     switch ($this->version) {
       case 2:
       case 3:
-        return md5(implode('', $this->fingerprint_material()));
+        return $this->fingerprint = md5(implode('', $this->fingerprint_material()));
       case 4:
-        return sha1(implode('', $this->fingerprint_material()));
+        return $this->fingerprint = sha1(implode('', $this->fingerprint_material()));
     }
   }
 
