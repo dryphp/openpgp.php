@@ -1010,6 +1010,46 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
 
     unset($this->input);
   }
+
+  function body() {
+    $bytes = parent::body() . chr($this->s2k_useage);
+    $secret_material = NULL;
+    if($this->s2k_usage == 255 || $this->s2k_usage == 254) {
+      $bytes .= chr($this->symmetric_type);
+      $bytes .= chr($this->s2k_type);
+      $bytes .= chr($this->s2k_hash_algorithm);
+      if($this->s2k_type == 1 || $this->s2k_type == 3) {
+        $bytes .= $this->s2k_salt;
+      }
+      if($this->s2k_type == 3) {
+        // TODO: reverse ugly bit manipulation
+      }
+    }
+    if($this->s2k_usage > 0) {
+      $bytes .= $this->encrypted_data;
+    } else {
+      $secret_material = '';
+      foreach(self::$secret_key_fields[$this->algorithm] as $f) {
+        $f = $this->key[$f];
+        $secret_material .= pack('n', OpenPGP::bitlength($f));
+        $secret_material .= $f;
+      }
+      $bytes .= $secret_material;
+    }
+    if($this->s2k_useage == 254) {
+      // TODO: SHA1 checksum
+      $bytes .= "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+    } else {
+      // 2-octet checksum
+      // TODO: this design will not work for encrypted keys
+      $chk = 0;
+      for($i = 0; $i < strlen($secret_material); $i++) {
+        $chk = ($chk + ord($secret_material[$i])) % 65536;
+      }
+      $bytes .= pack('n', $chk);
+    }
+    return $bytes;
+  }
 }
 
 /**
