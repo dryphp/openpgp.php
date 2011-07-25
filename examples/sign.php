@@ -3,9 +3,6 @@
 require dirname(__FILE__).'/../lib/openpgp.php';
 require dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
 
-echo OpenPGP::enarmor("test");
-exit;
-
 /* Parse secret key from STDIN, the key must not be password protected */
 $wkey = OpenPGP_Message::parse(file_get_contents('php://stdin'));
 $wkey = $wkey[0];
