@@ -1249,6 +1249,10 @@ class OpenPGP_UserIDPacket extends OpenPGP_Packet {
     if ($this->email)   { $text[] = "<{$this->email}>"; }
     return implode(' ', $text);
   }
+
+  function body() {
+    return ''.$this; // Convert to string is the body
+  }
 }
 
 /**
