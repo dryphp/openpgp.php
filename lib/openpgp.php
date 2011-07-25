@@ -873,15 +873,11 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
     $this->key_id = substr($this->fingerprint(), -8);
   }
 
-  /**
-   * @see http://tools.ietf.org/html/rfc4880#section-12.2
-   * @see http://tools.ietf.org/html/rfc4880#section-3.3
-   */
-  function fingerprint() {
+  function fingerprint_material() {
     switch ($this->version) {
       case 2:
       case 3:
-        return $this->fingerprint = md5($this->key['n'] . $this->key['e']);
+        return array($this->key['n'], $this->key['e']);
       case 4:
         $head = array(
           chr(0x99), NULL,
@@ -895,7 +891,32 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
         }
         $material = implode('', $material);
         $head[1] = pack('n', 6 + strlen($material));
-        return $this->fingerprint = sha1(implode('',$head).$material);
+        $head[] = $material;
+        return $head;
+    }
+  }
+
+  /**
+   * @see http://tools.ietf.org/html/rfc4880#section-12.2
+   * @see http://tools.ietf.org/html/rfc4880#section-3.3
+   */
+  function fingerprint() {
+    switch ($this->version) {
+      case 2:
+      case 3:
+        return md5(implode('', $this->fingerprint_material()));
+      case 4:
+        return sha1(implode('', $this->fingerprint_material()));
+    }
+  }
+
+  function body() {
+     switch ($this->version) {
+      case 2:
+      case 3:
+        /* TODO */
+      case 4:
+        return implode('', array_slice($this->fingerprint_material(), 2));
     }
   }
 
