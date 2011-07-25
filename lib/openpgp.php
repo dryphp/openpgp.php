@@ -741,8 +741,9 @@ class OpenPGP_SignaturePacket_ReasonforRevocationPacket extends OpenPGP_Signatur
   // TODO
 }
 
-class OpenPGP_SignaturePacket_FeaturesPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+
+class OpenPGP_SignaturePacket_FeaturesPacket extends OpenPGP_SignaturePacket_KeyFlagsPacket {
+  // Identical functionality to parent
 }
 
 class OpenPGP_SignaturePacket_SignatureTargetPacket extends OpenPGP_SignaturePacket_Subpacket {
