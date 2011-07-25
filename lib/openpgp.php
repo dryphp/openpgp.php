@@ -1225,6 +1225,18 @@ class OpenPGP_TrustPacket extends OpenPGP_Packet {
 class OpenPGP_UserIDPacket extends OpenPGP_Packet {
   public $name, $comment, $email;
 
+  function __construct($name='', $comment='', $email='') {
+    parent::__construct();
+    if(!$comment && !$email) {
+      $this->input = $name;
+      $this->read();
+    } else {
+      $this->name = $name;
+      $this->comment = $comment;
+      $this->email = $email;
+    }
+  }
+
   function read() {
     $this->text = $this->input;
     // User IDs of the form: "name (comment) <email>"
