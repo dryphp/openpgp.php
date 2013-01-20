@@ -1,11 +1,10 @@
 <?php
 
-require dirname(__FILE__).'/../lib/openpgp.php';
-require dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
+require_once dirname(__FILE__).'/../lib/openpgp.php';
+require_once dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
 
 /* Parse public key from STDIN */
 $wkey = OpenPGP_Message::parse(file_get_contents('php://stdin'));
-$wkey = $wkey[0];
 
 /* Parse signed message from file named "t" */
 $m = OpenPGP_Message::parse(file_get_contents('t'));
