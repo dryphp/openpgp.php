@@ -3,5 +3,9 @@
 		<testsuite name="Serialization">
 			<file>tests/suite.php</file>
 		</testsuite>
+
+		<testsuite name="Fingerprint">
+			<file>tests/suite.php</file>
+		</testsuite>
 	</testsuites>
 </phpunit>

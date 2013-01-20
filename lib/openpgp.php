@@ -1193,9 +1193,9 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
     switch ($this->version) {
       case 2:
       case 3:
-        return $this->fingerprint = md5(implode('', $this->fingerprint_material()));
+        return $this->fingerprint = strtoupper(md5(implode('', $this->fingerprint_material())));
       case 4:
-        return $this->fingerprint = sha1(implode('', $this->fingerprint_material()));
+        return $this->fingerprint = strtoupper(sha1(implode('', $this->fingerprint_material())));
     }
   }
 
