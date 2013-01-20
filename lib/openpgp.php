@@ -533,6 +533,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $input = substr($input, $length_of_length); // Chop off length header
     $tag = ord($input[0]);
     $class = self::class_for($tag);
+	$packet = NULL;
     if($class) {
       $packet = new $class();
       $packet->tag = $tag;
@@ -592,7 +593,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     );
 
   static function class_for($tag) {
-    if(!self::$subpacket_types[$tag]) return NULL;
+    if(!isset(self::$subpacket_types[$tag])) return NULL;
     return 'OpenPGP_SignaturePacket_'.self::$subpacket_types[$tag].'Packet';
   }
 
@@ -827,7 +828,10 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
     }
     $this->timestamp = $timestamp ? $timestamp : time();
     $this->version = $version;
-    $this->key_id = substr($this->fingerprint(), -8);
+
+    if(count($this->key) > 0) {
+      $this->key_id = substr($this->fingerprint(), -8);
+    }
   }
 
   // Find self signatures in a message, these often contain metadata about the key
@@ -1186,9 +1190,9 @@ class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
   function __construct($data=NULL, $opt=array()) {
     parent::__construct();
     $this->data = $data;
-    $this->format = $opt['format'] ? $opt['format'] : 'b';
-    $this->filename = $opt['filename'] ? $opt['filename'] : 'data';
-    $this->timestamp = $opt['timestamp'] ? $opt['timestamp'] : time();
+    $this->format = isset($opt['format']) ? $opt['format'] : 'b';
+    $this->filename = isset($opt['filename']) ? $opt['filename'] : 'data';
+    $this->timestamp = isset($opt['timestamp']) ? $opt['timestamp'] : time();
   }
 
   function normalize() {
