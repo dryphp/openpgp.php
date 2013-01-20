@@ -285,7 +285,8 @@ class OpenPGP_Packet {
       return array($tag, 3, (($len - 192) << 8) + ord($input[2]) + 192);
     }
     if($len == 255) { // Five octet length
-      return array($tag, 6, array_pop(unpack('N', substr($input, 2, 4))));
+      $unpacked = unpack('N', substr($input, 2, 4));
+      return array($tag, 6, array_pop($unpacked));
     }
     // TODO: Partial body lengths. 1 << ($len & 0x1F)
   }
@@ -366,7 +367,7 @@ class OpenPGP_Packet {
    */
   function read_unpacked($count, $format) {
     $unpacked = unpack($format, $this->read_bytes($count));
-    return $unpacked[1];
+    return array_pop($unpacked);
   }
 
   function read_byte() {
@@ -456,7 +457,8 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $this->trailer = $this->body(true);
     $signer = $signers[$this->key_algorithm_name()][$this->hash_algorithm_name()];
     $this->data = call_user_func($signer, $this->data.$this->trailer);
-    $this->hash_head = array_pop(unpack('n', substr($this->data, 0, 2)));
+    $unpacked = unpack('n', substr($this->data, 0, 2));
+    $this->hash_head = array_pop($unpacked);
   }
 
   function read() {
@@ -621,7 +623,8 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     }
     if($len == 255) { // Five octet length
       $length_of_length = 5;
-      $len = array_pop(unpack('N', substr($input, 1, 4)));
+      $unpacked = unpack('N', substr($input, 1, 4));
+      $len = array_pop($unpacked);
     }
     $input = substr($input, $length_of_length); // Chop off length header
     $tag = ord($input[0]);
