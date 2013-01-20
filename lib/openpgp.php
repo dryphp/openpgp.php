@@ -461,8 +461,30 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
 
   function read() {
     switch($this->version = ord($this->read_byte())) {
+      case 2:
       case 3:
-        // TODO: V3 sigs
+        assert(ord($this->read_byte()) == 5);
+        $this->signature_type = ord($this->read_byte());
+        $creation_time = $this->read_timestamp();
+        $keyid = $this->read_bytes(8);
+        $keyidHex = '';
+        for($i = 0; $i < strlen($keyid); $i++) { // Store KeyID in Hex
+          $keyidHex .= sprintf('%02X',ord($keyid{$i}));
+        }
+
+        $this->hashed_subpackets = array();
+        $this->unhashed_subpackets = array(
+          new OpenPGP_SignaturePacket_SignatureCreationTimePacket($creation_time),
+          new OpenPGP_SignaturePacket_IssuerPacket($keyidHex)
+        );
+
+        $this->key_algorithm = ord($this->read_byte());
+        $this->hash_algorithm = ord($this->read_byte());
+        $this->hash_head = $this->read_unpacked(2, 'n');
+        $this->data = array();
+        while(strlen($this->input) > 0) {
+          $this->data[] = $this->read_mpi();
+        }
         break;
       case 4:
         $this->signature_type = ord($this->read_byte());
@@ -507,22 +529,54 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
   }
 
   function body() {
-    if(!$this->trailer) $this->trailer = $this->calculate_trailer();
-    $body = substr($this->trailer, 0, -6);
+    switch($this->version) {
+      case 2:
+      case 3:
+        $body = chr($this->version) . chr(5) . chr($this->signature_type);
 
-    $unhashed_subpackets = '';
-    foreach((array)$this->unhashed_subpackets as $p) {
-      $unhashed_subpackets .= $p->to_bytes();
+        foreach((array)$this->unhashed_subpackets as $p) {
+          if($p instanceof OpenPGP_SignaturePacket_SignatureCreationTimePacket) {
+            $body .= pack('N', $p->data);
+            break;
+          }
+        }
+
+        foreach((array)$this->unhashed_subpackets as $p) {
+          if($p instanceof OpenPGP_SignaturePacket_IssuerPacket) {
+            for($i = 0; $i < strlen($p->data); $i += 2) {
+              $body .= chr(hexdec($p->data{$i}.$p->data{$i+1}));
+            }
+            break;
+          }
+        }
+
+        $body .= chr($this->key_algorithm);
+        $body .= chr($this->hash_algorithm);
+        $body .= pack('n', $this->hash_head);
+
+        foreach($this->data as $mpi) {
+          $body .= pack('n', OpenPGP::bitlength($mpi)).$mpi;
+        }
+
+        return $body;
+      case 4:
+        if(!$this->trailer) $this->trailer = $this->calculate_trailer();
+        $body = substr($this->trailer, 0, -6);
+
+        $unhashed_subpackets = '';
+        foreach((array)$this->unhashed_subpackets as $p) {
+          $unhashed_subpackets .= $p->to_bytes();
+        }
+        $body .= pack('n', strlen($unhashed_subpackets)).$unhashed_subpackets;
+
+        $body .= pack('n', $this->hash_head);
+
+        foreach($this->data as $mpi) {
+          $body .= pack('n', OpenPGP::bitlength($mpi)).$mpi;
+        }
+
+        return $body;
     }
-    $body .= pack('n', strlen($unhashed_subpackets)).$unhashed_subpackets;
-
-    $body .= pack('n', $this->hash_head);
-
-    foreach($this->data as $mpi) {
-      $body .= pack('n', OpenPGP::bitlength($mpi)).$mpi;
-    }
-
-    return $body;
   }
 
   function key_algorithm_name() {
@@ -1078,14 +1132,16 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
    */
   function read() {
     switch ($this->version = ord($this->read_byte())) {
-      case 2:
       case 3:
-        return FALSE; // TODO
+        $this->timestamp = $this->read_timestamp();
+        $this->v3_days_of_validity = $this->read_unpacked(2, 'n');
+        $this->algorithm = ord($this->read_byte());
+        $this->read_key_material();
+        break;
       case 4:
         $this->timestamp = $this->read_timestamp();
         $this->algorithm = ord($this->read_byte());
         $this->read_key_material();
-        return TRUE;
     }
   }
 
@@ -1101,9 +1157,13 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
 
   function fingerprint_material() {
     switch ($this->version) {
-      case 2:
       case 3:
-        return array($this->key['n'], $this->key['e']);
+        $material = array();
+        foreach (self::$key_fields[$this->algorithm] as $i) {
+          $material[] = pack('n', OpenPGP::bitlength($this->key[$i]));
+          $material[] = $this->key[$i];
+        }
+        return $material;
       case 4:
         $head = array(
           chr(0x99), NULL,
@@ -1140,8 +1200,11 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
      switch ($this->version) {
       case 2:
       case 3:
-        return chr(3) . pack('N', $this->timestamp) .
-          pack('N', $this->v3_days_of_validity) . chr($this->algorithm);
+        return implode('', array_merge(array(
+            chr($this->version) . pack('N', $this->timestamp) .
+              pack('n', $this->v3_days_of_validity) . chr($this->algorithm)
+          ), $this->fingerprint_material())
+        );
       case 4:
         return implode('', array_slice($this->fingerprint_material(), 2));
     }
