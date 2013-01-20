@@ -5,9 +5,9 @@ require dirname(__FILE__).'/../lib/openpgp.php';
 class Serialization extends PHPUnit_Framework_TestCase {
   public function oneSerialization($path) {
     $in = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
-    //$mid = $in->to_bytes();
-    //$out = OpenPGP_Message::parse($mid);
-    //$this->assertEquals($in, $out);
+    $mid = $in->to_bytes();
+    $out = OpenPGP_Message::parse($mid);
+    $this->assertEquals($in, $out);
   }
 
   public function test000001006public_key() {

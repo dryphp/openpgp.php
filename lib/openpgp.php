@@ -86,6 +86,28 @@ class OpenPGP {
   static function bitlength($data) {
     return (strlen($data) - 1) * 8 + (int)floor(log(ord($data[0]), 2)) + 1;
   }
+
+  static function decode_s2k_count($c) {
+    return ((int)16 + ($c & 15)) << (($c >> 4) + 6);
+  }
+
+  static function encode_s2k_count($iterations) {
+    if($iterations >= 65011712) return 255;
+
+    $count = $iterations >> 6;
+    $c = 0;
+    while($count >= 32) {
+      $count = $count >> 1;
+      $c++;
+    }
+    $result = ($c << 4) | ($count - 16);
+
+    if(OpenPGP::decode_s2k_count($result) < $iterations) {
+      return $result + 1;
+    }
+
+    return $result;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -241,6 +263,7 @@ class OpenPGP_Packet {
         $packet->length = $data_length;
         $packet->read();
         unset($packet->input);
+        unset($packet->length);
       }
       $input = substr($input, $data_length);
     }
@@ -392,6 +415,7 @@ class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
 
 /**
  * OpenPGP Signature packet (tag 2).
+ * Be sure to NULL the trailer if you update a signature packet!
  *
  * @see http://tools.ietf.org/html/rfc4880#section-5.2
  */
@@ -457,12 +481,22 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
         $this->unhashed_subpackets = self::get_subpackets($this->read_bytes($unhashed_size));
 
         $this->hash_head = $this->read_unpacked(2, 'n');
-        $this->data = $this->read_mpi();
+
+        $this->data = array();
+        while(strlen($this->input) > 0) {
+          $this->data[] = $this->read_mpi();
+        }
         break;
     }
   }
 
-  function body($trailer=false) {
+  function calculate_trailer() {
+    // The trailer is just the top of the body plus some crap
+    $body = $this->body_start();
+    return $body.chr(4).chr(0xff).pack('N', strlen($body));
+  }
+
+  function body_start() {
     $body = chr(4).chr($this->signature_type).chr($this->key_algorithm).chr($this->hash_algorithm);
 
     $hashed_subpackets = '';
@@ -470,9 +504,11 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
       $hashed_subpackets .= $p->to_bytes();
     }
     $body .= pack('n', strlen($hashed_subpackets)).$hashed_subpackets;
+  }
 
-    // The trailer is just the top of the body plus some crap
-    if($trailer) return $body.chr(4).chr(0xff).pack('N', strlen($body));
+  function body() {
+    if(!$this->trailer) $this->trailer = $this->calculate_trailer();
+    $body = substr($this->trailer, 0, -6);
 
     $unhashed_subpackets = '';
     foreach((array)$this->unhashed_subpackets as $p) {
@@ -481,7 +517,10 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $body .= pack('n', strlen($unhashed_subpackets)).$unhashed_subpackets;
 
     $body .= pack('n', $this->hash_head);
-    $body .= pack('n', OpenPGP::bitlength($this->data)).$this->data;
+
+    foreach($this->data as $mpi) {
+      $body .= pack('n', OpenPGP::bitlength($mpi)).$mpi;
+    }
 
     return $body;
   }
@@ -533,7 +572,6 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $input = substr($input, $length_of_length); // Chop off length header
     $tag = ord($input[0]);
     $class = self::class_for($tag);
-	$packet = NULL;
     if($class) {
       $packet = new $class();
       $packet->tag = $tag;
@@ -541,6 +579,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
       $packet->length = $len-1;
       $packet->read();
       unset($packet->input);
+      unset($packet->length);
     }
     $input = substr($input, $len); // Chop off the data from this packet
     return $packet;
@@ -593,7 +632,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     );
 
   static function class_for($tag) {
-    if(!isset(self::$subpacket_types[$tag])) return NULL;
+    if(!isset(self::$subpacket_types[$tag])) return 'OpenPGP_SignaturePacket_Subpacket';
     return 'OpenPGP_SignaturePacket_'.self::$subpacket_types[$tag].'Packet';
   }
 
@@ -610,6 +649,15 @@ class OpenPGP_SignaturePacket_Subpacket extends OpenPGP_Packet {
     $size = chr(255).pack('N', strlen($body)+1); // Use 5-octet lengths + 1 for tag as first packet body octet
     $tag = chr($this->tag);
     return array('header' => $size.$tag, 'body' => $body);
+  }
+
+  /* Defaults for unsupported packets */
+  function read() {
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return $this->data;
   }
 }
 
@@ -637,19 +685,44 @@ class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_Sign
 }
 
 class OpenPGP_SignaturePacket_ExportableCertificationPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = (ord($this->input) == 0);
+  }
+
+  function body() {
+    return chr($this->data ? 1 : 0);
+  }
 }
 
 class OpenPGP_SignaturePacket_TrustSignaturePacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->depth = ord($this->input{0});
+    $this->trust = ord($this->input{1});
+  }
+
+  function body() {
+    return chr($this->depth) . chr($this->trust);
+  }
 }
 
 class OpenPGP_SignaturePacket_RegularExpressionPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = substr($this->input, 0, -1);
+  }
+
+  function body() {
+    return $this->data . chr(0);
+  }
 }
 
 class OpenPGP_SignaturePacket_RevocablePacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = (ord($this->input) == 0);
+  }
+
+  function body() {
+    return chr($this->data ? 1 : 0);
+  }
 }
 
 class OpenPGP_SignaturePacket_KeyExpirationTimePacket extends OpenPGP_SignaturePacket_Subpacket {
@@ -663,11 +736,48 @@ class OpenPGP_SignaturePacket_KeyExpirationTimePacket extends OpenPGP_SignatureP
 }
 
 class OpenPGP_SignaturePacket_PreferredSymmetricAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = array();
+    while(strlen($this->input) > 0) {
+      $this->data[] = ord($this->read_byte());
+    }
+  }
+
+  function body() {
+    $bytes = '';
+    foreach($this->data as $algo) {
+      $bytes .= chr($algo);
+    }
+    return $bytes;
+  }
 }
 
 class OpenPGP_SignaturePacket_RevocationKeyPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+   public $key_algorithm, $fingerprint, $sensitive;
+
+  function read() {
+    // bitfield must have bit 0x80 set, says the spec
+    $bitfield = ord($this->read_byte());
+    $this->sensitive = $bitfield & 0x40 == 0x40;
+    $this->key_algorithm = ord($this->read_byte());
+
+    $this->fingerprint = '';
+    while(strlen($this->input) > 0) {
+      $this->fingerprint .= sprintf('%02X',ord($this->read_byte()));
+    }
+  }
+
+  function body() {
+    $bytes = '';
+    $bytes .= chr(0x80 | ($this->sensitive ? 0x40 : 0x00));
+    $bytes .= chr($this->key_algorithm);
+
+    for($i = 0; $i < strlen($this->fingerprint); $i += 2) {
+      $bytes .= chr(hexdec($this->fingerprint{$i}.$this->fingerprint{$i+1}));
+    }
+
+    return $bytes;
+  }
 }
 
 /**
@@ -690,31 +800,100 @@ class OpenPGP_SignaturePacket_IssuerPacket extends OpenPGP_SignaturePacket_Subpa
 }
 
 class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  public $human_readable, $name;
+
+  function read() {
+    $flags = $this->read_bytes(4);
+    $namelen = $this->read_unpacked(2, 'n');
+    $datalen = $this->read_unpacked(2, 'n');
+    $this->human_readable = $flags[0] & 0x80 == 0x80;
+    $this->name = $this->read_bytes($namelen);
+    $this->data = $this->read_bytes($datalen);
+  }
+
+  function body () {
+    return chr($this->human_readable ? 0x80 : 0x00) . "\0\0\0" .
+      pack('n', strlen($this->name)) . pack('n', strlen($this->data)) .
+      $this->name . $this->data;
+  }
 }
 
 class OpenPGP_SignaturePacket_PreferredHashAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = array();
+    while(strlen($this->input) > 0) {
+      $this->data[] = ord($this->read_byte());
+    }
+  }
+
+  function body() {
+    $bytes = '';
+    foreach($this->data as $algo) {
+      $bytes .= chr($algo);
+    }
+    return $bytes;
+  }
 }
 
 class OpenPGP_SignaturePacket_PreferredCompressionAlgorithmsPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = array();
+    while(strlen($this->input) > 0) {
+      $this->data[] = ord($this->read_byte());
+    }
+  }
+
+  function body() {
+    $bytes = '';
+    foreach($this->data as $algo) {
+      $bytes .= chr($algo);
+    }
+    return $bytes;
+  }
 }
 
 class OpenPGP_SignaturePacket_KeyServerPreferencesPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  public $no_modify;
+
+  function read() {
+    $flags = ord($this->input);
+    $this->no_modify = $flags & 0x80 == 0x80;
+  }
+
+  function body() {
+    return chr($this->no_modify ? 0x80 : 0x00);
+  }
 }
 
 class OpenPGP_SignaturePacket_PreferredKeyServerPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return $this->data;
+  }
 }
 
 class OpenPGP_SignaturePacket_PrimaryUserIDPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = (ord($this->input) == 0);
+  }
+
+  function body() {
+    return chr($this->data ? 1 : 0);
+  }
+
 }
 
 class OpenPGP_SignaturePacket_PolicyURIPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return $this->data;
+  }
 }
 
 class OpenPGP_SignaturePacket_KeyFlagsPacket extends OpenPGP_SignaturePacket_Subpacket {
@@ -740,11 +919,26 @@ class OpenPGP_SignaturePacket_KeyFlagsPacket extends OpenPGP_SignaturePacket_Sub
 }
 
 class OpenPGP_SignaturePacket_SignersUserIDPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  function read() {
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return $this->data;
+  }
 }
 
 class OpenPGP_SignaturePacket_ReasonforRevocationPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  public $code;
+
+  function read() {
+    $this->code = ord($this->read_byte());
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return chr($this->code) . $this->data;
+  }
 }
 
 
@@ -753,7 +947,18 @@ class OpenPGP_SignaturePacket_FeaturesPacket extends OpenPGP_SignaturePacket_Key
 }
 
 class OpenPGP_SignaturePacket_SignatureTargetPacket extends OpenPGP_SignaturePacket_Subpacket {
-  // TODO
+  public $key_algorithm, $hash_algorithm;
+
+  function read() {
+    $this->key_algorithm = ord($this->read_byte());
+    $this->hash_algorithm = ord($this->read_byte());
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return chr($this->key_algorithm) . chr($this->hash_algorithm) . $this->data;
+  }
+
 }
 
 class OpenPGP_SignaturePacket_EmbeddedSignaturePacket extends OpenPGP_SignaturePacket {
@@ -819,6 +1024,7 @@ class OpenPGP_OnePassSignaturePacket extends OpenPGP_Packet {
 class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
   public $version, $timestamp, $algorithm;
   public $key, $key_id, $fingerprint;
+  public $v3_days_of_validity;
 
   function __construct($key=array(), $algorithm='RSA', $timestamp=NULL, $version=4) {
     parent::__construct();
@@ -934,7 +1140,8 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
      switch ($this->version) {
       case 2:
       case 3:
-        /* TODO */
+        return chr(3) . pack('N', $this->timestamp) .
+          pack('N', $this->v3_days_of_validity) . chr($this->algorithm);
       case 4:
         return implode('', array_slice($this->fingerprint_material(), 2));
     }
@@ -990,8 +1197,7 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
       $this->s2k_hash_algorithm = ord($this->read_byte());
       if($this->s2k_type == 1 || $this->s2k_type == 3) $this->s2k_salt = $this->read_bytes(8);
       if($this->s2k_type == 3) {
-        $c = ord($this->read_byte());
-        $this->s2k_count = ((int)16 + ($c & 15)) << (($c >> 4) + 6);
+        $this->s2k_count = OpenPGP::decode_s2k_count(ord($this->read_byte()));
       }
     } else if($this->s2k_useage > 0) {
       $this->symmetric_type = $this->s2k_useage;
@@ -1034,7 +1240,7 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
   function body() {
     $bytes = parent::body() . chr($this->s2k_useage);
     $secret_material = NULL;
-    if($this->s2k_usage == 255 || $this->s2k_usage == 254) {
+    if($this->s2k_useage == 255 || $this->s2k_useage == 254) {
       $bytes .= chr($this->symmetric_type);
       $bytes .= chr($this->s2k_type);
       $bytes .= chr($this->s2k_hash_algorithm);
@@ -1042,10 +1248,10 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
         $bytes .= $this->s2k_salt;
       }
       if($this->s2k_type == 3) {
-        // TODO: reverse ugly bit manipulation
+        $bytes .= chr(OpenPGP::encode_s2k_count($this->s2k_count));
       }
     }
-    if($this->s2k_usage > 0) {
+    if($this->s2k_useage > 0) {
       $bytes .= $this->encrypted_data;
     } else {
       $secret_material = '';
@@ -1055,13 +1261,8 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
         $secret_material .= $f;
       }
       $bytes .= $secret_material;
-    }
-    if($this->s2k_useage == 254) {
-      // TODO: SHA1 checksum
-      $bytes .= "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-    } else {
+
       // 2-octet checksum
-      // TODO: this design will not work for encrypted keys
       $chk = 0;
       for($i = 0; $i < strlen($secret_material); $i++) {
         $chk = ($chk + ord($secret_material[$i])) % 65536;
@@ -1222,7 +1423,13 @@ class OpenPGP_LiteralDataPacket extends OpenPGP_Packet {
  * @see http://tools.ietf.org/html/rfc4880#section-5.10
  */
 class OpenPGP_TrustPacket extends OpenPGP_Packet {
-  // TODO
+  function read() {
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return $this->data;
+  }
 }
 
 /**
