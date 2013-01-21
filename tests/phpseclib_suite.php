@@ -10,7 +10,7 @@ class MessageVerification extends PHPUnit_Framework_TestCase {
     $pkeyM = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $pkey));
     $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
     $verify = new OpenPGP_Crypt_RSA($pkeyM);
-    $this->assertSame($verify->verify($m), TRUE);
+    $this->assertSame($verify->verify($m), $m->signatures());
   }
 
   public function testUncompressedOpsRSA() {
@@ -38,4 +38,17 @@ class MessageVerification extends PHPUnit_Framework_TestCase {
     $this->oneMessageDSA('pubring.gpg', 'uncompressed-ops-dsa-sha384.gpg');
   }
 */
+}
+
+
+class KeyVerification extends PHPUnit_Framework_TestCase {
+  public function oneKeyRSA($path) {
+    $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
+    $verify = new OpenPGP_Crypt_RSA($m);
+    $this->assertSame($verify->verify($m), $m->signatures());
+  }
+
+  public function testHelloKey() {
+    $this->oneKeyRSA("helloKey.gpg");
+  }
 }

@@ -11,5 +11,9 @@
     <testsuite name="MessageVerification">
       <file>tests/phpseclib_suite.php</file>
     </testsuite>
+
+    <testsuite name="KeyVerification">
+      <file>tests/phpseclib_suite.php</file>
+    </testsuite>
   </testsuites>
 </phpunit>

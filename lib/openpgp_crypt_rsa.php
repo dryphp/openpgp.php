@@ -50,23 +50,40 @@ class OpenPGP_Crypt_RSA {
   // Pass a message to verify with this key, or a key (OpenPGP or Crypt_RSA) to check this message with
   // Second optional parameter to specify which signature to verify (if there is more than one)
   function verify($packet, $index=0) {
+    $self = $this; // For old PHP
     if(!is_object($packet)) $packet = OpenPGP_Message::parse($packet);
-    if($packet instanceof OpenPGP_Message && !($packet[0] instanceof OpenPGP_PublicKeyPacket)) {
-      list($signature_packet, $data_packet) = $packet->signature_and_data($index);
-      $key = $this->public_key($signature_packet->issuer());
-      if(!$key || $signature_packet->key_algorithm_name() != 'RSA') return NULL;
-      $key->setHash(strtolower($signature_packet->hash_algorithm_name()));
-      return $packet->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => function($m, $s)  use($key) {return $key->verify($m, $s[0]);})));
+    if(!$this->message) {
+      $m = $packet;
+      $verifier = function($m, $s) use($self) {
+        $key = $self->public_key($s->issuer());
+        if(!$key) return false;
+        $key->setHash(strtolower($s->hash_algorithm_name()));
+        return $key->verify($m, reset($s->data));
+      };
     } else {
-      list($signature_packet, $data_packet) = $this->message->signature_and_data($index);
-      if(!$this->message || $signature_packet->key_algorithm_name() != 'RSA') return NULL;
       if(!($packet instanceof Crypt_RSA)) {
         $packet = new self($packet);
-        $packet = $packet->public_key($signature_packet->issuer());
       }
-      $packet->setHash(strtolower($signature_packet->hash_algorithm_name()));
-      return $this->message->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => function($m, $s) use($packet) {return $packet->verify($m, $s[0]);})));
+
+      $m = $this->message;
+      $verifier = function($m, $s) use($self, $packet) {
+        if(!($packet instanceof Crypt_RSA)) {
+          $key = $packet->public_key($s->issuer());
+        }
+        if(!$key) return false;
+        $key->setHash(strtolower($s->hash_algorithm_name()));
+        return $key->verify($m, reset($s->data));
+      };
     }
+
+    return $m->verified_signatures(array('RSA' => array(
+      'MD5'    => $verifier,
+      'SHA1'   => $verifier,
+      'SHA224' => $verifier,
+      'SHA256' => $verifier,
+      'SHA384' => $verifier,
+      'SHA512' => $verifier
+    )));
   }
 
   // Pass a message to sign with this key, or a secret key to sign this message with

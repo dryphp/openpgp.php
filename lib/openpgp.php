@@ -171,36 +171,116 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
     return $bytes;
   }
 
-  function signature_and_data($index=0) {
+  /**
+   * Extract signed objects from a well-formatted message
+   *
+   * Recurses into CompressedDataPacket
+   *
+   * <http://tools.ietf.org/html/rfc4880#section-11>
+   */
+  function signatures() {
     $msg = $this;
-    while($msg[0] instanceof OpenPGP_CompressedDataPacket) $msg = $msg[0];
+    while($msg[0] instanceof OpenPGP_CompressedDataPacket) $msg = $msg[0]->data;
 
-    $i = 0;
-    foreach($msg as $p) {
-      if($p instanceof OpenPGP_SignaturePacket) {
-        if($i == $index) $signature_packet = $p;
-        $i++;
+    $key = NULL;
+    $userid = NULL;
+    $subkey = NULL;
+    $sigs = array();
+    $final_sigs = array();
+
+    foreach($msg as $idx => $p) {
+      if($p instanceof OpenPGP_LiteralDataPacket) {
+        return array(array($p, array_values(array_filter($msg->packets, function($p) {
+          return $p instanceof OpenPGP_SignaturePacket;
+        }))));
+      } else if($p instanceof OpenPGP_PublicSubkeyPacket || $p instanceof OpenPGP_SecretSubkeyPacket) {
+        if($userid) {
+          array_push($final_sigs, array($key, $userid, $sigs));
+          $userid = NULL;
+        } else if($subkey) {
+          array_push($final_sigs, array($key, $subkey, $sigs));
+          $key = NULL;
+        }
+        $sigs = array();
+        $subkey = $p;
+      } else if($p instanceof OpenPGP_PublicKeyPacket) {
+        if($userid) {
+          array_push($final_sigs, array($key, $userid, $sigs));
+          $userid = NULL;
+        } else if($subkey) {
+          array_push($final_sigs, array($key, $subkey, $sigs));
+          $subkey = NULL;
+        } else if($key) {
+          array_push($final_sigs, array($key, $sigs));
+          $key = NULL;
+        }
+        $sigs = array();
+        $key = $p;
+      } else if($p instanceof OpenPGP_UserIDPacket) {
+        if($userid) {
+          array_push($final_sigs, array($key, $userid, $sigs));
+          $userid = NULL;
+        } else if($key) {
+          array_push($final_sigs, array($key, $sigs));
+        }
+        $sigs = array();
+        $userid = $p;
+      } else if($p instanceof OpenPGP_SignaturePacket) {
+        $sigs[] = $p;
       }
-      if($p instanceof OpenPGP_LiteralDataPacket) $data_packet = $p;
-      if(isset($signature_packet) && isset($data_packet)) break;
     }
 
-    return array($signature_packet, $data_packet);
+    if($userid) {
+      array_push($final_sigs, array($key, $userid, $sigs));
+    } else if($subkey) {
+      array_push($final_sigs, array($key, $subkey, $sigs));
+    } else if($key) {
+      array_push($final_sigs, array($key, $sigs));
+    }
+
+    return $final_sigs;
   }
 
   /**
-   * Function to verify signature number $index
-   * $verifiers is an array of callbacks formatted like array('RSA' => array('SHA256' => CALLBACK)) that take two parameters: message and signature
+   * Function to extract verified signatures
+   * $verifiers is an array of callbacks formatted like array('RSA' => array('SHA256' => CALLBACK)) that take two parameters: raw message and signature packet
    */
-  function verify($verifiers, $index=0) {
-    list($signature_packet, $data_packet) = $this->signature_and_data($index);
-    if(!$signature_packet || !$data_packet) return NULL; // No signature or no data
+  function verified_signatures($verifiers) {
+    $signed = $this->signatures();
+    $vsigned = array();
 
-    $verifier = $verifiers[$signature_packet->key_algorithm_name()][$signature_packet->hash_algorithm_name()];
-    if(!$verifier) return NULL; // No verifier
+    foreach($signed as $sign) {
+      $signatures = array_pop($sign);
+      $vsigs = array();
 
-    $data_packet->normalize();
-    return call_user_func($verifier, $data_packet->data.$signature_packet->trailer, $signature_packet->data);
+      foreach($signatures as $sig) {
+        $verifier = $verifiers[$sig->key_algorithm_name()][$sig->hash_algorithm_name()];
+        if($verifier && $this->verify_one($verifier, $sign, $sig)) {
+          $vsigs[] = $sig;
+        }
+      }
+      array_push($sign, $vsigs);
+      $vsigned[] = $sign;
+    }
+
+    return $vsigned;
+  }
+
+  function verify_one($verifier, $sign, $sig) {
+    if($sign[0] instanceof OpenPGP_LiteralDataPacket) {
+      $sign[0]->normalize();
+      $raw = $sign[0]->data;
+    } else if(isset($sign[1]) && $sign[1] instanceof OpenPGP_UserIDPacket) {
+      $raw = implode('', array_merge($sign[0]->fingerprint_material(), array(chr(0xB4),
+        pack('N', strlen($sign[1]->body())), $sign[1]->body())));
+    } else if(isset($sign[1]) && ($sign[1] instanceof OpenPGP_PublicSubkeyPacket || $sign[1] instanceof OpenPGP_SecretSubkeyPacket)) {
+      $raw = implode('', array_merge($sign[0]->fingerprint_material(), $sign[1]->fingerprint_material()));
+    } else if($sign[0] instanceof OpenPGP_PublicKeyPacket) {
+      $raw = implode('', $sign[0]->fingerprint_material());
+    } else {
+      return NULL;
+    }
+    return call_user_func($verifier, $raw.$sig->trailer, $sig);
   }
 
   // IteratorAggregate interface
@@ -285,8 +365,7 @@ class OpenPGP_Packet {
       return array($tag, 3, (($len - 192) << 8) + ord($input[2]) + 192);
     }
     if($len == 255) { // Five octet length
-      $unpacked = unpack('N', substr($input, 2, 4));
-      return array($tag, 6, array_pop($unpacked));
+      return array($tag, 6, reset(unpack('N', substr($input, 2, 4))));
     }
     // TODO: Partial body lengths. 1 << ($len & 0x1F)
   }
@@ -366,8 +445,7 @@ class OpenPGP_Packet {
    * @see http://php.net/manual/en/function.unpack.php
    */
   function read_unpacked($count, $format) {
-    $unpacked = unpack($format, $this->read_bytes($count));
-    return array_pop($unpacked);
+    return reset(unpack($format, $this->read_bytes($count)));
   }
 
   function read_byte() {
@@ -457,8 +535,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     $this->trailer = $this->body(true);
     $signer = $signers[$this->key_algorithm_name()][$this->hash_algorithm_name()];
     $this->data = call_user_func($signer, $this->data.$this->trailer);
-    $unpacked = unpack('n', substr($this->data, 0, 2));
-    $this->hash_head = array_pop($unpacked);
+    $this->hash_head = reset(unpack('n', substr($this->data, 0, 2)));
   }
 
   function read() {
@@ -623,8 +700,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     }
     if($len == 255) { // Five octet length
       $length_of_length = 5;
-      $unpacked = unpack('N', substr($input, 1, 4));
-      $len = array_pop($unpacked);
+      $len = reset(unpack('N', substr($input, 1, 4)));
     }
     $input = substr($input, $length_of_length); // Chop off length header
     $tag = ord($input[0]);
@@ -1520,27 +1596,27 @@ class OpenPGP_UserIDPacket extends OpenPGP_Packet {
   }
 
   function read() {
-    $this->text = $this->input;
+    $this->data = $this->input;
     // User IDs of the form: "name (comment) <email>"
-    if (preg_match('/^([^\(]+)\(([^\)]+)\)\s+<([^>]+)>$/', $this->text, $matches)) {
+    if (preg_match('/^([^\(]+)\(([^\)]+)\)\s+<([^>]+)>$/', $this->data, $matches)) {
       $this->name    = trim($matches[1]);
       $this->comment = trim($matches[2]);
       $this->email   = trim($matches[3]);
     }
     // User IDs of the form: "name <email>"
-    else if (preg_match('/^([^<]+)\s+<([^>]+)>$/', $this->text, $matches)) {
+    else if (preg_match('/^([^<]+)\s+<([^>]+)>$/', $this->data, $matches)) {
       $this->name    = trim($matches[1]);
       $this->comment = NULL;
       $this->email   = trim($matches[2]);
     }
     // User IDs of the form: "name"
-    else if (preg_match('/^([^<]+)$/', $this->text, $matches)) {
+    else if (preg_match('/^([^<]+)$/', $this->data, $matches)) {
       $this->name    = trim($matches[1]);
       $this->comment = NULL;
       $this->email   = NULL;
     }
     // User IDs of the form: "<email>"
-    else if (preg_match('/^<([^>]+)>$/', $this->text, $matches)) {
+    else if (preg_match('/^<([^>]+)>$/', $this->data, $matches)) {
       $this->name    = NULL;
       $this->comment = NULL;
       $this->email   = trim($matches[2]);
