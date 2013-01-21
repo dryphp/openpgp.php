@@ -1562,7 +1562,13 @@ class OpenPGP_CompressedDataPacket extends OpenPGP_Packet implements IteratorAgg
  * @see http://tools.ietf.org/html/rfc4880#section-5.7
  */
 class OpenPGP_EncryptedDataPacket extends OpenPGP_Packet {
-  // TODO
+  function read() {
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return $this->data;
+  }
 }
 
 /**
@@ -1705,8 +1711,17 @@ class OpenPGP_UserAttributePacket extends OpenPGP_Packet {
  *
  * @see http://tools.ietf.org/html/rfc4880#section-5.13
  */
-class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_Packet {
-  // TODO
+class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_EncryptedDataPacket {
+  public $version;
+
+  function read() {
+    $this->version = ord($this->read_byte());
+    $this->data = $this->input;
+  }
+
+  function body() {
+    return chr($this->version) . $this->data;
+  }
 }
 
 /**
