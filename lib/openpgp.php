@@ -110,6 +110,52 @@ class OpenPGP {
   }
 }
 
+class OpenPGP_S2K {
+  public $type, $hash_algorithm, $salt, $count;
+
+  static function parse(&$input) {
+    $s2k = new OpenPGP_S2k();
+    switch($s2k->type = ord($input{0})) {
+      case 0:
+        $s2k->hash_algorithm = ord($input{1});
+        $input = substr($input, 2);
+        break;
+      case 1:
+        $s2k->hash_algorithm = ord($input{1});
+        $s2k->salt = substr($input, 2, 8);
+        $input = substr($input, 10);
+        break;
+      case 3:
+        $s2k->hash_algorithm = ord($input{1});
+        $s2k->salt = substr($input, 2, 8);
+        $s2k->count = OpenPGP::decode_s2k_count($input{9});
+        $input = substr($input, 11);
+        break;
+    }
+
+    return $s2k;
+  }
+
+  function to_bytes() {
+    $bytes = chr($this->type);
+    switch($this->type) {
+      case 0:
+        $bytes .= chr($this->hash_algorithm);
+        break;
+      case 1:
+        $bytes .= chr($this->hash_algorithm);
+        $bytes .= $this->salt;
+        break;
+      case 3:
+        $bytes .= chr($this->hash_algorithm);
+        $bytes .= $this->salt;
+        $bytes .= chr(OpenPGP::encode_s2k_count($this->count));
+        break;
+    }
+    return $bytes;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // OpenPGP messages
 
@@ -1121,7 +1167,19 @@ class OpenPGP_SignaturePacket_EmbeddedSignaturePacket extends OpenPGP_SignatureP
  * @see http://tools.ietf.org/html/rfc4880#section-5.3
  */
 class OpenPGP_SymmetricSessionKeyPacket extends OpenPGP_Packet {
-  // TODO
+  public $version, $symmetric_algorithm, $s2k, $encrypted_data;
+
+  function read() {
+    $this->version = ord($this->read_byte());
+    $this->symmetric_algorithm = ord($this->read_byte());
+    $this->s2k = OpenPGP_S2k::parse($this->input);
+    $this->encrypted_data = $this->input;
+  }
+
+  function body() {
+    return chr($this->version) . chr($this->symmetric_algorithm) .
+      $this->s2k->to_bytes() . $this->encrypted_data;
+  }
 }
 
 /**
@@ -1335,18 +1393,13 @@ class OpenPGP_PublicSubkeyPacket extends OpenPGP_PublicKeyPacket {
  * @see http://tools.ietf.org/html/rfc4880#section-12
  */
 class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
-  public $s2k_useage, $s2k_type, $s2k_hash_algorithm, $s2k_salt, $s2k_count, $symmetric_type, $private_hash, $encrypted_data;
+  public $s2k_useage, $s2k, $symmetric_type, $private_hash, $encrypted_data;
   function read() {
     parent::read(); // All the fields from PublicKey
     $this->s2k_useage = ord($this->read_byte());
     if($this->s2k_useage == 255 || $this->s2k_useage == 254) {
       $this->symmetric_type = ord($this->read_byte());
-      $this->s2k_type = ord($this->read_byte());
-      $this->s2k_hash_algorithm = ord($this->read_byte());
-      if($this->s2k_type == 1 || $this->s2k_type == 3) $this->s2k_salt = $this->read_bytes(8);
-      if($this->s2k_type == 3) {
-        $this->s2k_count = OpenPGP::decode_s2k_count(ord($this->read_byte()));
-      }
+      $this->s2k = OpenPGP_S2k::parse($this->input);
     } else if($this->s2k_useage > 0) {
       $this->symmetric_type = $this->s2k_useage;
     }
@@ -1390,14 +1443,7 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
     $secret_material = NULL;
     if($this->s2k_useage == 255 || $this->s2k_useage == 254) {
       $bytes .= chr($this->symmetric_type);
-      $bytes .= chr($this->s2k_type);
-      $bytes .= chr($this->s2k_hash_algorithm);
-      if($this->s2k_type == 1 || $this->s2k_type == 3) {
-        $bytes .= $this->s2k_salt;
-      }
-      if($this->s2k_type == 3) {
-        $bytes .= chr(OpenPGP::encode_s2k_count($this->s2k_count));
-      }
+      $bytes .= $this->s2k->to_bytes();
     }
     if($this->s2k_useage > 0) {
       $bytes .= $this->encrypted_data;

@@ -366,6 +366,14 @@ class Serialization extends PHPUnit_Framework_TestCase {
   public function testuncompressedopsrsagpg() {
     $this->oneSerialization("uncompressed-ops-rsa.gpg");
   }
+
+  public function testSymmetricAES() {
+    $this->oneSerialization("symmetric-aes.gpg");
+  }
+
+  public function testSymmetricNoMDC() {
+    $this->oneSerialization("symmetric-no-mdc.gpg");
+  }
 }
 
 class Fingerprint extends PHPUnit_Framework_TestCase {
