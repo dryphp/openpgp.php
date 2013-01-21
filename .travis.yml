@@ -3,5 +3,5 @@ php:
   - "5.4"
   - "5.3"
 before_script:
-  - pear channel-discover phpseclib.sourceforge.net
-  - pear install phpseclib/Crypt_RSA
+  - git clone git://github.com/phpseclib/phpseclib.git phpseclib
+  - mv phpseclib/phpseclib/* ./
