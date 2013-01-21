@@ -1,6 +1,6 @@
 <?php
 
-require dirname(__FILE__).'/../lib/openpgp.php';
+require_once dirname(__FILE__).'/../lib/openpgp.php';
 
 class Serialization extends PHPUnit_Framework_TestCase {
   public function oneSerialization($path) {

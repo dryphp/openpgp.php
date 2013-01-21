@@ -56,7 +56,7 @@ class OpenPGP_Crypt_RSA {
       $key = $this->public_key($signature_packet->issuer());
       if(!$key || $signature_packet->key_algorithm_name() != 'RSA') return NULL;
       $key->setHash(strtolower($signature_packet->hash_algorithm_name()));
-      return $packet->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => array($key, 'verify'))));
+      return $packet->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => function($m, $s)  use($key) {return $key->verify($m, $s[0]);})));
     } else {
       list($signature_packet, $data_packet) = $this->message->signature_and_data($index);
       if(!$this->message || $signature_packet->key_algorithm_name() != 'RSA') return NULL;
@@ -65,7 +65,7 @@ class OpenPGP_Crypt_RSA {
         $packet = $packet->public_key($signature_packet->issuer());
       }
       $packet->setHash(strtolower($signature_packet->hash_algorithm_name()));
-      return $this->message->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => array($packet, 'verify'))));
+      return $this->message->verify(array('RSA' => array($signature_packet->hash_algorithm_name() => function($m, $s) use($packet) {return $packet->verify($m, $s[0]);})));
     }
   }
 
@@ -141,11 +141,12 @@ class OpenPGP_Crypt_RSA {
 
   static function crypt_rsa_key($mod, $exp, $hash='SHA256') {
     $rsa = new Crypt_RSA();
-    $rsa->signatureMode = CRYPT_RSA_SIGNATURE_PKCS1;
+    $rsa->setSignatureMode(CRYPT_RSA_SIGNATURE_PKCS1);
     $rsa->setHash(strtolower($hash));
     $rsa->modulus = new Math_BigInteger($mod, 256);
     $rsa->k = strlen($rsa->modulus->toBytes());
     $rsa->exponent = new Math_BigInteger($exp, 256);
+    $rsa->setPublicKey();
     return $rsa;
   }
 

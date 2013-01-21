@@ -1,11 +1,15 @@
 <phpunit>
-	<testsuites>
-		<testsuite name="Serialization">
-			<file>tests/suite.php</file>
-		</testsuite>
+  <testsuites>
+    <testsuite name="Serialization">
+      <file>tests/suite.php</file>
+    </testsuite>
 
-		<testsuite name="Fingerprint">
-			<file>tests/suite.php</file>
-		</testsuite>
-	</testsuites>
+    <testsuite name="Fingerprint">
+      <file>tests/suite.php</file>
+    </testsuite>
+
+    <testsuite name="MessageVerification">
+      <file>tests/phpseclib_suite.php</file>
+    </testsuite>
+  </testsuites>
 </phpunit>

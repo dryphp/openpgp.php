@@ -182,7 +182,7 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
         $i++;
       }
       if($p instanceof OpenPGP_LiteralDataPacket) $data_packet = $p;
-      if($signature_packet && $data_packet) break;
+      if(isset($signature_packet) && isset($data_packet)) break;
     }
 
     return array($signature_packet, $data_packet);
