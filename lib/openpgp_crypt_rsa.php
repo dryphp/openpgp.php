@@ -110,7 +110,8 @@ class OpenPGP_Crypt_RSA {
     if(!$key || !$message) return NULL; // Missing some data
 
     if($message instanceof OpenPGP_Message) {
-      list($dummy, $message) = $message->signature_and_data();
+      $sign = $message->signatures();
+      $message = $sign[0][0];
     }
 
     if(!($key instanceof Crypt_RSA)) {
@@ -122,7 +123,7 @@ class OpenPGP_Crypt_RSA {
 
     $sig = new OpenPGP_SignaturePacket($message, 'RSA', strtoupper($hash));
     $sig->hashed_subpackets[] = new OpenPGP_SignaturePacket_IssuerPacket($keyid);
-    $sig->sign_data(array('RSA' => array($hash => array($key, 'sign'))));
+    $sig->sign_data(array('RSA' => array($hash => function($data) use($key) {return array($key->sign($data));})));
 
     return new OpenPGP_Message(array($sig, $message));
   }

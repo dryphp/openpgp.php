@@ -29,6 +29,15 @@ class MessageVerification extends PHPUnit_Framework_TestCase {
     $this->oneMessageRSA('pubring.gpg', 'compressedsig-bzip2.gpg');
   }
 
+  public function testSigningMessages() {
+    $wkey = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/helloKey.gpg'));
+    $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
+    $sign = new OpenPGP_Crypt_RSA($wkey);
+    $m = $sign->sign($data)->to_bytes();
+    $reparsedM = OpenPGP_Message::parse($m);
+    $this->assertSame($sign->verify($reparsedM), $reparsedM->signatures());
+  }
+
 /*
   public function testUncompressedOpsDSA() {
     $this->oneMessageDSA('pubring.gpg', 'uncompressed-ops-dsa.gpg');

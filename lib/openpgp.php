@@ -534,10 +534,10 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
    * $signers in the same format as $verifiers for OpenPGP_Message.
    */
   function sign_data($signers) {
-    $this->trailer = $this->body(true);
+    $this->trailer = $this->calculate_trailer();
     $signer = $signers[$this->key_algorithm_name()][$this->hash_algorithm_name()];
     $this->data = call_user_func($signer, $this->data.$this->trailer);
-    $unpacked = unpack('n', substr($this->data, 0, 2));
+    $unpacked = unpack('n', substr(implode('',$this->data), 0, 2));
     $this->hash_head = reset($unpacked);
   }
 
@@ -608,6 +608,8 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
       $hashed_subpackets .= $p->to_bytes();
     }
     $body .= pack('n', strlen($hashed_subpackets)).$hashed_subpackets;
+
+    return $body;
   }
 
   function body() {
@@ -653,7 +655,7 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
 
         $body .= pack('n', $this->hash_head);
 
-        foreach($this->data as $mpi) {
+        foreach((array)$this->data as $mpi) {
           $body .= pack('n', OpenPGP::bitlength($mpi)).$mpi;
         }
 
