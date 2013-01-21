@@ -128,7 +128,7 @@ class OpenPGP_S2K {
       case 3:
         $s2k->hash_algorithm = ord($input{1});
         $s2k->salt = substr($input, 2, 8);
-        $s2k->count = OpenPGP::decode_s2k_count($input{9});
+        $s2k->count = OpenPGP::decode_s2k_count(ord($input{10}));
         $input = substr($input, 11);
         break;
     }
@@ -153,6 +153,37 @@ class OpenPGP_S2K {
         break;
     }
     return $bytes;
+  }
+
+  function raw_hash($s) {
+    return hash(strtolower(OpenPGP_SignaturePacket::$hash_algorithms[$this->hash_algorithm]), $s, true);
+  }
+
+  function sized_hash($s, $size) {
+    $hash = $this->raw_hash($s);
+    while(strlen($hash) < $size) {
+      $s = "\0" . $s;
+      $hash .= $this->raw_hash($s);
+    }
+
+    return substr($hash, 0, $size);
+  }
+
+  function iterate($s) {
+    if(strlen($s) >= $this->count) return $s;
+    $s = str_repeat($s, ceil($this->count / strlen($s)));
+    return substr($s, 0, $this->count);
+  }
+
+  function make_key($pass, $size) {
+    switch($this->type) {
+      case 0:
+        return $this->sized_hash($pass, $size);
+      case 1:
+        return $this->sized_hash($this->salt . $pass, $size);
+      case 3:
+        return $this->sized_hash($this->iterate($this->salt . $pass), $size);
+    }
   }
 }
 

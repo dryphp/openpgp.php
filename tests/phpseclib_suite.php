@@ -4,6 +4,7 @@
 
 require_once dirname(__FILE__).'/../lib/openpgp.php';
 require_once dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
+require_once dirname(__FILE__).'/../lib/openpgp_phpseclib_crypt.php';
 
 class MessageVerification extends PHPUnit_Framework_TestCase {
   public function oneMessageRSA($pkey, $path) {
@@ -60,4 +61,32 @@ class KeyVerification extends PHPUnit_Framework_TestCase {
   public function testHelloKey() {
     $this->oneKeyRSA("helloKey.gpg");
   }
+}
+
+
+class Decryption extends PHPUnit_Framework_TestCase {
+  public function oneSymmetric($pass, $cnt, $path) {
+    $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
+    $m2 = OpenPGP_phpseclib_Crypt::decryptSymmetric($pass, $m);
+    while($m2[0] instanceof OpenPGP_CompressedDataPacket) $m2 = $m2[0]->data;
+    foreach($m2 as $p) {
+      if($p instanceof OpenPGP_LiteralDataPacket) {
+        $this->assertEquals($p->data, $cnt);
+      }
+    }
+  }
+
+  public function testDecryptAES() {
+    $this->oneSymmetric("hello", "PGP\n", "symmetric-aes.gpg");
+  }
+
+/* TODO
+  public function testDecryptSessionKey() {
+    $this->oneSymmetric("hello", "PGP\n", "symmetric-with-session-key.gpg");
+  }
+
+  public function testDecryptNoMDC() {
+    $this->oneSymmetric("hello", "PGP\n", "symmetric-no-mdc.gpg");
+  }
+*/
 }
