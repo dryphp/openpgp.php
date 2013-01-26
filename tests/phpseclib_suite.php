@@ -111,3 +111,21 @@ class Decryption extends PHPUnit_Framework_TestCase {
     $this->assertSame(!!$skey, true);
   }
 }
+
+class Encryption extends PHPUnit_Framework_TestCase {
+  public function testEncryptSymmetric() {
+    $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
+    $encrypted = OpenPGP_Crypt_AES_TripleDES::encrypt('secret', new OpenPGP_Message(array($data)));
+    $decrypted = OpenPGP_Crypt_AES_TripleDES::decryptSymmetric('secret', $encrypted);
+    $this->assertEquals($decrypted[0]->data, 'This is text.');
+  }
+
+  public function testEncryptAsymmetric() {
+    $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/helloKey.gpg'));
+    $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
+    $encrypted = OpenPGP_Crypt_AES_TripleDES::encrypt($key, new OpenPGP_Message(array($data)));
+    $decryptor = new OpenPGP_Crypt_RSA($key);
+    $decrypted = $decryptor->decrypt($encrypted);
+    $this->assertEquals($decrypted[0]->data, 'This is text.');
+  }
+}

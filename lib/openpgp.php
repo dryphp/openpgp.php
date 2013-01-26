@@ -113,6 +113,13 @@ class OpenPGP {
 class OpenPGP_S2K {
   public $type, $hash_algorithm, $salt, $count;
 
+  function __construct($salt='BADSALT', $hash_algorithm=10, $count=65536, $type=3) {
+    $this->type = $type;
+    $this->hash_algorithm = $hash_algorithm;
+    $this->salt = $salt;
+    $this->count = $count;
+  }
+
   static function parse(&$input) {
     $s2k = new OpenPGP_S2k();
     switch($s2k->type = ord($input{0})) {
@@ -569,6 +576,13 @@ class OpenPGP_Packet {
  */
 class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
   public $version, $keyid, $key_algorithm, $encrypted_data;
+
+  function __construct($key_algorithm='', $keyid='', $encrypted_data='', $version=3) {
+    $this->version = $version;
+    $this->keyid = substr($keyid, -16);
+    $this->key_algorithm = $key_algorithm;
+    $this->encrypted_data = $encrypted_data;
+  }
 
   function read() {
     switch($this->version = ord($this->read_byte())) {
@@ -1230,6 +1244,13 @@ class OpenPGP_SignaturePacket_EmbeddedSignaturePacket extends OpenPGP_SignatureP
 class OpenPGP_SymmetricSessionKeyPacket extends OpenPGP_Packet {
   public $version, $symmetric_algorithm, $s2k, $encrypted_data;
 
+  function __construct($s2k=NULL, $encrypted_data='', $symmetric_algorithm=9, $version=3) {
+    $this->version = $version;
+    $this->symmetric_algorithm = $symmetric_algorithm;
+    $this->s2k = $s2k;
+    $this->encrypted_data = $encrypted_data;
+  }
+
   function read() {
     $this->version = ord($this->read_byte());
     $this->symmetric_algorithm = ord($this->read_byte());
@@ -1775,6 +1796,10 @@ class OpenPGP_UserAttributePacket extends OpenPGP_Packet {
 class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_EncryptedDataPacket {
   public $version;
 
+  function __construct($data='', $version=1) {
+    $this->data = $data;
+  }
+
   function read() {
     $this->version = ord($this->read_byte());
     $this->data = $this->input;
@@ -1791,7 +1816,24 @@ class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_EncryptedDataPacket {
  * @see http://tools.ietf.org/html/rfc4880#section-5.14
  */
 class OpenPGP_ModificationDetectionCodePacket extends OpenPGP_Packet {
-  // TODO
+  function __construct($sha1='') {
+    $this->data = $sha1;
+  }
+
+  function read() {
+    $this->data = $this->input;
+    if(strlen($this->input) != 20) throw new Exception("Bad ModificationDetectionCodePacket");
+  }
+
+  function header_and_body() {
+    $body = $this->body(); // Get body first, we will need it's length
+    if(strlen($body) != 20) throw new Exception("Bad ModificationDetectionCodePacket");
+    return array('header' => "\xD3\x14", 'body' => $body);
+  }
+
+  function body() {
+    return $this->data;
+  }
 }
 
 /**

@@ -1,10 +1,49 @@
 <?php
 
 require_once dirname(__FILE__).'/openpgp.php';
+@include_once dirname(__FILE__).'/openpgp_crypt_rsa.php';
 require_once 'Crypt/AES.php';
 require_once 'Crypt/TripleDES.php';
+require_once 'Crypt/Random.php';
 
 class OpenPGP_Crypt_AES_TripleDES {
+  public static function encrypt($passphrases_and_keys, $message, $symmetric_algorithm=9) {
+    list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($symmetric_algorithm);
+    $prefix = self::randomBytes($key_block_bytes);
+    $prefix .= substr($prefix, -2);
+
+    $key = self::randomBytes($key_bytes);
+    $cipher->setKey($key);
+
+    $to_encrypt = $prefix . $message->to_bytes();
+    $mdc = new OpenPGP_ModificationDetectionCodePacket(hash('sha1', $to_encrypt . "\xD3\x14", true));
+    $to_encrypt .= $mdc->to_bytes();
+    $encrypted = array(new OpenPGP_IntegrityProtectedDataPacket($cipher->encrypt($to_encrypt)));
+
+    if(!is_array($passphrases_and_keys) && !($passphrases_and_keys instanceof IteratorAggregate)) {
+      $passphrases_and_keys = (array)$passphrases_and_keys;
+    }
+
+    foreach($passphrases_and_keys as $pass) {
+      if($pass instanceof OpenPGP_PublicKeyPacket) {
+        if(!in_array($pass->algorithm, array(1,2,3))) throw new Exception("Only RSA keys are supported.");
+        $crypt_rsa = new OpenPGP_Crypt_RSA($pass);
+        $rsa = $crypt_rsa->public_key();
+        $rsa->setEncryptionMode(CRYPT_RSA_ENCRYPTION_PKCS1);
+        $esk = $rsa->encrypt(chr($symmetric_algorithm) . $key . pack('n', self::checksum($key)));
+        $esk = pack('n', OpenPGP::bitlength($esk)) . $esk;
+        array_unshift($encrypted, new OpenPGP_AsymmetricSessionKeyPacket($pass->algorithm, $pass->fingerprint(), $esk));
+      } else if(is_string($pass)) {
+        $s2k = new OpenPGP_S2K(crypt_random() . crypt_random() . crypt_random());
+        $cipher->setKey($s2k->make_key($pass, $key_bytes));
+        $esk = $cipher->encrypt(chr($symmetric_algorithm) . $key);
+        array_unshift($encrypted, new OpenPGP_SymmetricSessionKeyPacket($s2k, $esk, $symmetric_algorithm));
+      }
+    }
+
+    return new OpenPGP_Message($encrypted);
+  }
+
   public static function decryptSymmetric($pass, $m) {
     $epacket = self::getEncryptedData($m);
 
@@ -41,16 +80,13 @@ class OpenPGP_Crypt_AES_TripleDES {
     if($packet->s2k_useage == 254) {
       $chk = substr($material, -20);
       $material = substr($material, 0, -20);
-      if($chk != hash('sha1', $material)) return NULL;
+      if($chk != hash('sha1', $material, true)) return NULL;
     } else {
       $chk = unpack('n', substr($material, -2));
       $chk = reset($chk);
       $material = substr($material, 0, -2);
 
-      $mkChk = 0;
-      for($i = 0; $i < strlen($material); $i++) {
-        $mkChk = ($mkChk + ord($material{$i})) % 65536;
-      }
+      $mkChk = self::checksum($material);
       if($chk != $mkChk) return NULL;
     }
 
@@ -138,5 +174,22 @@ class OpenPGP_Crypt_AES_TripleDES {
       if($p instanceof OpenPGP_EncryptedDataPacket) return $p;
     }
     throw new Exception("Can only decrypt EncryptedDataPacket");
+  }
+
+  public static function randomBytes($n) {
+    $key = '';
+    for($i = 0; $i < $n; $i++) {
+		$key .= crypt_random();
+    }
+    $s2k = new OpenPGP_S2K(crypt_random() . crypt_random() . crypt_random());
+    return $s2k->make_key($key, $n);
+  }
+
+  public static function checksum($s) {
+    $mkChk = 0;
+    for($i = 0; $i < strlen($s); $i++) {
+      $mkChk = ($mkChk + ord($s{$i})) % 65536;
+    }
+    return $mkChk;
   }
 }
