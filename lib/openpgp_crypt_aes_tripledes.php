@@ -45,7 +45,10 @@ class OpenPGP_Crypt_AES_TripleDES {
              $mkMDC = hash("sha1", $prefix . $data . "\xD3\x14", true);
              if($mkMDC !== $mdc) return false;
 
-             return OpenPGP_Message::parse($data);
+             try {
+               $msg = OpenPGP_Message::parse($data);
+             } catch (Exception $ex) { $msg = NULL; }
+             if($msg) return $msg; /* Otherwise keep trying */
           } else {
             // TODO (resync)
           }
@@ -54,6 +57,8 @@ class OpenPGP_Crypt_AES_TripleDES {
         }
       }
     }
+
+    return NULL; /* If we get here, we failed */
   }
 
   public static function getEncryptedData($m) {
