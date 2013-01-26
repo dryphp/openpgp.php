@@ -88,9 +88,9 @@ class Decryption extends PHPUnit_Framework_TestCase {
   public function testDecryptSessionKey() {
     $this->oneSymmetric("hello", "PGP\n", "symmetric-with-session-key.gpg");
   }
+*/
 
   public function testDecryptNoMDC() {
     $this->oneSymmetric("hello", "PGP\n", "symmetric-no-mdc.gpg");
   }
-*/
 }

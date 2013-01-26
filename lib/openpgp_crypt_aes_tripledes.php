@@ -37,10 +37,10 @@ class OpenPGP_Crypt_AES_TripleDES {
 
         if(strlen($p->encrypted_data) < 1) {
           if($epacket instanceof OpenPGP_IntegrityProtectedDataPacket) {
-				 $data = substr($cipher->decrypt($epacket->data . str_repeat("\0", $padAmount)), 0, strlen($epacket->data));
-				 $prefix = substr($data, 0, $key_block_bytes + 2);
-				 $mdc = substr(substr($data, -22, 22), 2);
-				 $data = substr($data, $key_block_bytes + 2, -22);
+             $data = substr($cipher->decrypt($epacket->data . str_repeat("\0", $padAmount)), 0, strlen($epacket->data));
+             $prefix = substr($data, 0, $key_block_bytes + 2);
+             $mdc = substr(substr($data, -22, 22), 2);
+             $data = substr($data, $key_block_bytes + 2, -22);
 
              $mkMDC = hash("sha1", $prefix . $data . "\xD3\x14", true);
              if($mkMDC !== $mdc) return false;
@@ -50,7 +50,17 @@ class OpenPGP_Crypt_AES_TripleDES {
              } catch (Exception $ex) { $msg = NULL; }
              if($msg) return $msg; /* Otherwise keep trying */
           } else {
-            // TODO (resync)
+             // No MDC mean decrypt with resync
+             $iv = substr($epacket->data, 2, $key_block_bytes);
+             $edata = substr($epacket->data, $key_block_bytes + 2);
+
+             $cipher->setIV($iv);
+             $data = substr($cipher->decrypt($edata . str_repeat("\0", $padAmount)), 0, strlen($edata));
+
+             try {
+               $msg = OpenPGP_Message::parse($data);
+             } catch (Exception $ex) { $msg = NULL; }
+             if($msg) return $msg; /* Otherwise keep trying */
           }
         } else {
           // TODO
