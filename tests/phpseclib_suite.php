@@ -4,7 +4,7 @@
 
 require_once dirname(__FILE__).'/../lib/openpgp.php';
 require_once dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
-require_once dirname(__FILE__).'/../lib/openpgp_phpseclib_crypt.php';
+require_once dirname(__FILE__).'/../lib/openpgp_crypt_aes_tripledes.php';
 
 class MessageVerification extends PHPUnit_Framework_TestCase {
   public function oneMessageRSA($pkey, $path) {
@@ -67,7 +67,7 @@ class KeyVerification extends PHPUnit_Framework_TestCase {
 class Decryption extends PHPUnit_Framework_TestCase {
   public function oneSymmetric($pass, $cnt, $path) {
     $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
-    $m2 = OpenPGP_phpseclib_Crypt::decryptSymmetric($pass, $m);
+    $m2 = OpenPGP_Crypt_AES_TripleDES::decryptSymmetric($pass, $m);
     while($m2[0] instanceof OpenPGP_CompressedDataPacket) $m2 = $m2[0]->data;
     foreach($m2 as $p) {
       if($p instanceof OpenPGP_LiteralDataPacket) {
@@ -78,6 +78,10 @@ class Decryption extends PHPUnit_Framework_TestCase {
 
   public function testDecryptAES() {
     $this->oneSymmetric("hello", "PGP\n", "symmetric-aes.gpg");
+  }
+
+  public function testDecrypt3DES() {
+    $this->oneSymmetric("hello", "PGP\n", "symmetric-3des.gpg");
   }
 
 /* TODO
