@@ -1454,15 +1454,15 @@ class OpenPGP_PublicSubkeyPacket extends OpenPGP_PublicKeyPacket {
  * @see http://tools.ietf.org/html/rfc4880#section-12
  */
 class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
-  public $s2k_useage, $s2k, $symmetric_type, $private_hash, $encrypted_data;
+  public $s2k_useage, $s2k, $symmetric_algorithm, $private_hash, $encrypted_data;
   function read() {
     parent::read(); // All the fields from PublicKey
     $this->s2k_useage = ord($this->read_byte());
     if($this->s2k_useage == 255 || $this->s2k_useage == 254) {
-      $this->symmetric_type = ord($this->read_byte());
+      $this->symmetric_algorithm = ord($this->read_byte());
       $this->s2k = OpenPGP_S2k::parse($this->input);
     } else if($this->s2k_useage > 0) {
-      $this->symmetric_type = $this->s2k_useage;
+      $this->symmetric_algorithm = $this->s2k_useage;
     }
     if($this->s2k_useage > 0) {
       // TODO: IV of the same length as cipher's block size
@@ -1503,7 +1503,7 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
     $bytes = parent::body() . chr($this->s2k_useage);
     $secret_material = NULL;
     if($this->s2k_useage == 255 || $this->s2k_useage == 254) {
-      $bytes .= chr($this->symmetric_type);
+      $bytes .= chr($this->symmetric_algorithm);
       $bytes .= $this->s2k->to_bytes();
     }
     if($this->s2k_useage > 0) {

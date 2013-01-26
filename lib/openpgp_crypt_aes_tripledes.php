@@ -30,6 +30,44 @@ class OpenPGP_Crypt_AES_TripleDES {
     return NULL; /* If we get here, we failed */
   }
 
+  public static function decryptSecretKey($pass, $packet) {
+    $packet = clone $packet; // Do not mutate orinigal
+
+    list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($packet->symmetric_algorithm);
+    $cipher->setKey($packet->s2k->make_key($pass, $key_bytes));
+    $cipher->setIV(substr($packet->encrypted_data, 0, $key_block_bytes));
+    $material = $cipher->decrypt(substr($packet->encrypted_data, $key_block_bytes));
+
+    if($packet->s2k_useage == 254) {
+      $chk = substr($material, -20);
+      $material = substr($material, 0, -20);
+      if($chk != hash('sha1', $material)) return NULL;
+    } else {
+      $chk = unpack('n', substr($material, -2));
+      $chk = reset($chk);
+      $material = substr($material, 0, -2);
+
+      $mkChk = 0;
+      for($i = 0; $i < strlen($material); $i++) {
+        $mkChk = ($mkChk + ord($material{$i})) % 65536;
+      }
+      if($chk != $mkChk) return NULL;
+    }
+
+    $packet->s2k_useage = 0;
+    $packet->symmetric_algorithm = 0;
+    $packet->encrypted_data = NULL;
+
+    foreach($packet::$secret_key_fields[$packet->algorithm] as $f) {
+      $length = unpack('n', substr($material, 0, 2)); // in bits
+      $length = (int)floor((reset($length) + 7) / 8); // in bytes
+      $packet->key[$f] = substr($material, 2, $length);
+      $material = substr($material, 2 + $length);
+    }
+
+    return $packet;
+  }
+
   public static function decryptPacket($epacket, $symmetric_algorithm, $key) {
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($symmetric_algorithm);
     if(!$cipher) return NULL;

@@ -104,4 +104,10 @@ class Decryption extends PHPUnit_Framework_TestCase {
       }
     }
   }
+
+  public function testDecryptSecretKey() {
+    $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/encryptedSecretKey.gpg'));
+    $skey = OpenPGP_Crypt_AES_TripleDES::decryptSecretKey("hello", $key[0]);
+    $this->assertSame(!!$skey, true);
+  }
 }
