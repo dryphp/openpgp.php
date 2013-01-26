@@ -9,10 +9,10 @@ require_once 'Crypt/Random.php';
 class OpenPGP_Crypt_AES_TripleDES {
   public static function encrypt($passphrases_and_keys, $message, $symmetric_algorithm=9) {
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($symmetric_algorithm);
-    $prefix = self::randomBytes($key_block_bytes);
+    $prefix = crypt_random_string($key_block_bytes);
     $prefix .= substr($prefix, -2);
 
-    $key = self::randomBytes($key_bytes);
+    $key = crypt_random_string($key_bytes);
     $cipher->setKey($key);
 
     $to_encrypt = $prefix . $message->to_bytes();
@@ -34,7 +34,7 @@ class OpenPGP_Crypt_AES_TripleDES {
         $esk = pack('n', OpenPGP::bitlength($esk)) . $esk;
         array_unshift($encrypted, new OpenPGP_AsymmetricSessionKeyPacket($pass->algorithm, $pass->fingerprint(), $esk));
       } else if(is_string($pass)) {
-        $s2k = new OpenPGP_S2K(crypt_random() . crypt_random() . crypt_random());
+        $s2k = new OpenPGP_S2K(crypt_random_string(10));
         $cipher->setKey($s2k->make_key($pass, $key_bytes));
         $esk = $cipher->encrypt(chr($symmetric_algorithm) . $key);
         array_unshift($encrypted, new OpenPGP_SymmetricSessionKeyPacket($s2k, $esk, $symmetric_algorithm));
@@ -174,15 +174,6 @@ class OpenPGP_Crypt_AES_TripleDES {
       if($p instanceof OpenPGP_EncryptedDataPacket) return $p;
     }
     throw new Exception("Can only decrypt EncryptedDataPacket");
-  }
-
-  public static function randomBytes($n) {
-    $key = '';
-    for($i = 0; $i < $n; $i++) {
-		$key .= crypt_random();
-    }
-    $s2k = new OpenPGP_S2K(crypt_random() . crypt_random() . crypt_random());
-    return $s2k->make_key($key, $n);
   }
 
   public static function checksum($s) {
