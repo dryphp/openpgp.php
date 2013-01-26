@@ -568,7 +568,37 @@ class OpenPGP_Packet {
  * @see http://tools.ietf.org/html/rfc4880#section-5.1
  */
 class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
-  // TODO
+  public $version, $keyid, $key_algorithm, $encrypted_data;
+
+  function read() {
+    switch($this->version = ord($this->read_byte())) {
+      case 3:
+        $rawkeyid = $this->read_bytes(8);
+        $this->keyid = '';
+        for($i = 0; $i < strlen($rawkeyid); $i++) { // Store KeyID in Hex
+          $this->keyid .= sprintf('%02X',ord($rawkeyid{$i}));
+        }
+
+        $this->key_algorithm = ord($this->read_byte());
+
+        $this->encrypted_data = $this->input;
+        break;
+      default:
+        throw new Exception("Unsupported AsymmetricSessionKeyPacket version: " . $this->version);
+    }
+  }
+
+  function body() {
+    $bytes = ord($this->version);
+
+    for($i = 0; $i < strlen($this->keyid); $i += 2) {
+      $bytes .= chr(hexdec($this->keyid{$i}.$this->keyid{$i+1}));
+    }
+
+    $bytes .= chr($this->key_algorithm);
+    $bytes .= $this->encrypted_data;
+    return $bytes;
+  }
 }
 
 /**

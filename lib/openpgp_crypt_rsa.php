@@ -12,6 +12,9 @@
 // From http://phpseclib.sourceforge.net/
 require 'Crypt/RSA.php';
 
+require_once dirname(__FILE__).'/openpgp.php';
+@include_once dirname(__FILE__).'/openpgp_cryph_aes_tripledes.php'; /* For encrypt/decrypt */
+
 class OpenPGP_Crypt_RSA {
   protected $key, $message;
 
@@ -155,6 +158,64 @@ class OpenPGP_Crypt_RSA {
     $sig->sign_data(array('RSA' => array($hash => array($key, 'sign'))));
 
     return $packet;
+  }
+
+  function decrypt($packet) {
+    if(!is_object($packet)) $packet = OpenPGP_Message::parse($packet);
+
+    if($packet instanceof OpenPGP_SecretKeyPacket || $packet instanceof Crypt_RSA
+       || ($packet instanceof ArrayAccess && $packet[0] instanceof OpenPGP_SecretKeyPacket)) {
+      $keys = $packet;
+      $message = $this->message;
+    } else {
+      $keys = $this->key;
+      $message = $packet;
+    }
+
+    if(!$keys || !$message) return NULL; // Missing some data
+
+    if(!($keys instanceof Crypt_RSA)) {
+      $keys = new self($keys);
+    }
+
+    foreach($message as $p) {
+      if($p instanceof OpenPGP_AsymmetricSessionKeyPacket) {
+        if($keys instanceof Crypt_RSA) {
+          $sk = self::try_decrypt_session($keys, $p->encyrpted_data);
+        } else if(strlen(str_replace('0', '', $p->keyid)) < 1) {
+          foreach($keys->key as $k) {
+            $sk = self::try_decrypt_session(self::convert_private_key($k), $p->encyrpted_data);
+            if($sk) break;
+          }
+        } else {
+          $key = $keys->private_key($p->keyid);
+          $sk = self::try_decrypt_session($key, substr($p->encrypted_data, 2));
+        }
+
+        if(!$sk) continue;
+
+        $r = OpenPGP_Crypt_AES_TripleDES::decryptPacket(OpenPGP_Crypt_AES_TripleDES::getEncryptedData($message), $sk[0], $sk[1]);
+        if($r) return $r;
+      }
+    }
+
+    return NULL; /* Failed */
+  }
+
+  static function try_decrypt_session($key, $edata) {
+    $key->setEncryptionMode(CRYPT_RSA_ENCRYPTION_PKCS1);
+    $data = $key->decrypt($edata);
+    $sk = substr($data, 1, strlen($data)-3);
+    $chk = unpack('n', substr($data, -2));
+    $chk = reset($chk);
+
+    $sk_chk = 0;
+    for($i = 0; $i < strlen($sk); $i++) {
+      $sk_chk = ($sk_chk + ord($sk{$i})) % 65536;
+    }
+
+    if($sk_chk != $chk) return NULL;
+    return array(ord($data{0}), $sk);
   }
 
   static function crypt_rsa_key($mod, $exp, $hash='SHA256') {

@@ -91,4 +91,16 @@ class Decryption extends PHPUnit_Framework_TestCase {
   public function testDecryptNoMDC() {
     $this->oneSymmetric("hello", "PGP\n", "symmetric-no-mdc.gpg");
   }
+
+  public function testDecryptAsymmetric() {
+    $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/hello.gpg'));
+    $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/helloKey.gpg'));
+    $m2 = (new OpenPGP_Crypt_RSA($key))->decrypt($m);
+    while($m2[0] instanceof OpenPGP_CompressedDataPacket) $m2 = $m2[0]->data;
+    foreach($m2 as $p) {
+      if($p instanceof OpenPGP_LiteralDataPacket) {
+        $this->assertEquals($p->data, "hello\n");
+      }
+    }
+  }
 }
