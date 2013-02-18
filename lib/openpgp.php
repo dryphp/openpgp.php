@@ -946,7 +946,7 @@ class OpenPGP_SignaturePacket_SignatureExpirationTimePacket extends OpenPGP_Sign
 
 class OpenPGP_SignaturePacket_ExportableCertificationPacket extends OpenPGP_SignaturePacket_Subpacket {
   function read() {
-    $this->data = (ord($this->input) == 0);
+    $this->data = (ord($this->input) != 0);
   }
 
   function body() {
@@ -977,7 +977,7 @@ class OpenPGP_SignaturePacket_RegularExpressionPacket extends OpenPGP_SignatureP
 
 class OpenPGP_SignaturePacket_RevocablePacket extends OpenPGP_SignaturePacket_Subpacket {
   function read() {
-    $this->data = (ord($this->input) == 0);
+    $this->data = (ord($this->input) != 0);
   }
 
   function body() {
@@ -1066,7 +1066,7 @@ class OpenPGP_SignaturePacket_NotationDataPacket extends OpenPGP_SignaturePacket
     $flags = $this->read_bytes(4);
     $namelen = $this->read_unpacked(2, 'n');
     $datalen = $this->read_unpacked(2, 'n');
-    $this->human_readable = $flags[0] & 0x80 == 0x80;
+    $this->human_readable = ord($flags[0]) & 0x80 == 0x80;
     $this->name = $this->read_bytes($namelen);
     $this->data = $this->read_bytes($datalen);
   }
@@ -1137,7 +1137,7 @@ class OpenPGP_SignaturePacket_PreferredKeyServerPacket extends OpenPGP_Signature
 
 class OpenPGP_SignaturePacket_PrimaryUserIDPacket extends OpenPGP_SignaturePacket_Subpacket {
   function read() {
-    $this->data = (ord($this->input) == 0);
+    $this->data = (ord($this->input) != 0);
   }
 
   function body() {
