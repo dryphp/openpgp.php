@@ -1784,6 +1784,7 @@ class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_EncryptedDataPacket {
   public $version;
 
   function __construct($data='', $version=1) {
+    $this->version = $version;
     $this->data = $data;
   }
 
