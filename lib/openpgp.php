@@ -1486,11 +1486,10 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
       $this->symmetric_algorithm = $this->s2k_useage;
     }
     if($this->s2k_useage > 0) {
-      // TODO: IV of the same length as cipher's block size
       $this->encrypted_data = $this->input; // Rest of input is MPIs and checksum (encrypted)
     } else {
-      $this->data = $this->input; // Rest of input is MPIs and checksum
-      $this->key_from_data();
+      $this->key_from_input();
+      $this->private_hash = $this->read_bytes(2); // TODO: Validate checksum?
     }
   }
 
@@ -1502,22 +1501,10 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
     17 => array('x'),                // DSA
   );
 
-  function key_from_data() {
-    if(!$this->data) return NULL; // Not decrypted yet
-    $this->input = $this->data;
-
+  function key_from_input() {
     foreach(self::$secret_key_fields[$this->algorithm] as $field) {
       $this->key[$field] = $this->read_mpi();
     }
-
-    // TODO: Validate checksum?
-    if($this->s2k_useage == 254) { // 20 octet sha1 hash
-      $this->private_hash = $this->read_bytes(20);
-    } else { // two-octet checksum
-      $this->private_hash = $this->read_bytes(2);
-    }
-
-    unset($this->input);
   }
 
   function body() {

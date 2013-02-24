@@ -93,14 +93,9 @@ class OpenPGP_Crypt_AES_TripleDES {
     $packet->s2k_useage = 0;
     $packet->symmetric_algorithm = 0;
     $packet->encrypted_data = NULL;
-
-    foreach($packet::$secret_key_fields[$packet->algorithm] as $f) {
-      $length = unpack('n', substr($material, 0, 2)); // in bits
-      $length = (int)floor((reset($length) + 7) / 8); // in bytes
-      $packet->key[$f] = substr($material, 2, $length);
-      $material = substr($material, 2 + $length);
-    }
-
+    $packet->input = $material;
+    $packet->key_from_input();
+    unset($packet->input);
     return $packet;
   }
 
