@@ -104,33 +104,33 @@ class OpenPGP_Crypt_AES_TripleDES {
     if(!$cipher) return NULL;
     $cipher->setKey($key);
 
-    $padAmount = $key_block_bytes - (strlen($epacket->data) % $key_block_bytes);
-
     if($epacket instanceof OpenPGP_IntegrityProtectedDataPacket) {
-       $data = substr($cipher->decrypt($epacket->data . str_repeat("\0", $padAmount)), 0, strlen($epacket->data));
-       $prefix = substr($data, 0, $key_block_bytes + 2);
-       $mdc = substr(substr($data, -22, 22), 2);
-       $data = substr($data, $key_block_bytes + 2, -22);
+      $padAmount = $key_block_bytes - (strlen($epacket->data) % $key_block_bytes);
+      $data = substr($cipher->decrypt($epacket->data . str_repeat("\0", $padAmount)), 0, strlen($epacket->data));
+      $prefix = substr($data, 0, $key_block_bytes + 2);
+      $mdc = substr(substr($data, -22, 22), 2);
+      $data = substr($data, $key_block_bytes + 2, -22);
 
-       $mkMDC = hash("sha1", $prefix . $data . "\xD3\x14", true);
-       if($mkMDC !== $mdc) return false;
+      $mkMDC = hash("sha1", $prefix . $data . "\xD3\x14", true);
+      if($mkMDC !== $mdc) return false;
 
-       try {
-         $msg = OpenPGP_Message::parse($data);
-       } catch (Exception $ex) { $msg = NULL; }
-       if($msg) return $msg; /* Otherwise keep trying */
+      try {
+        $msg = OpenPGP_Message::parse($data);
+      } catch (Exception $ex) { $msg = NULL; }
+      if($msg) return $msg; /* Otherwise keep trying */
     } else {
-       // No MDC mean decrypt with resync
-       $iv = substr($epacket->data, 2, $key_block_bytes);
-       $edata = substr($epacket->data, $key_block_bytes + 2);
+      // No MDC mean decrypt with resync
+      $iv = substr($epacket->data, 2, $key_block_bytes);
+      $edata = substr($epacket->data, $key_block_bytes + 2);
+      $padAmount = $key_block_bytes - (strlen($edata) % $key_block_bytes);
 
-       $cipher->setIV($iv);
-       $data = substr($cipher->decrypt($edata . str_repeat("\0", $padAmount)), 0, strlen($edata));
+      $cipher->setIV($iv);
+      $data = substr($cipher->decrypt($edata . str_repeat("\0", $padAmount)), 0, strlen($edata));
 
-       try {
-         $msg = OpenPGP_Message::parse($data);
-       } catch (Exception $ex) { $msg = NULL; }
-       if($msg) return $msg; /* Otherwise keep trying */
+      try {
+        $msg = OpenPGP_Message::parse($data);
+      } catch (Exception $ex) { $msg = NULL; }
+      if($msg) return $msg; /* Otherwise keep trying */
     }
 
     return NULL; /* Failed */
