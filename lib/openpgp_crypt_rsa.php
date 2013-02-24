@@ -52,7 +52,7 @@ class OpenPGP_Crypt_RSA {
 
   // Pass a message to verify with this key, or a key (OpenPGP or Crypt_RSA) to check this message with
   // Second optional parameter to specify which signature to verify (if there is more than one)
-  function verify($packet, $index=0) {
+  function verify($packet) {
     $self = $this; // For old PHP
     if(!is_object($packet)) $packet = OpenPGP_Message::parse($packet);
     if(!$this->message) {
