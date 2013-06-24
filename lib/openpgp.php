@@ -578,6 +578,7 @@ class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
   public $version, $keyid, $key_algorithm, $encrypted_data;
 
   function __construct($key_algorithm='', $keyid='', $encrypted_data='', $version=3) {
+    parent::__construct();
     $this->version = $version;
     $this->keyid = substr($keyid, -16);
     $this->key_algorithm = $key_algorithm;
@@ -603,7 +604,7 @@ class OpenPGP_AsymmetricSessionKeyPacket extends OpenPGP_Packet {
   }
 
   function body() {
-    $bytes = ord($this->version);
+    $bytes = chr($this->version);
 
     for($i = 0; $i < strlen($this->keyid); $i += 2) {
       $bytes .= chr(hexdec($this->keyid{$i}.$this->keyid{$i+1}));
@@ -1245,6 +1246,7 @@ class OpenPGP_SymmetricSessionKeyPacket extends OpenPGP_Packet {
   public $version, $symmetric_algorithm, $s2k, $encrypted_data;
 
   function __construct($s2k=NULL, $encrypted_data='', $symmetric_algorithm=9, $version=3) {
+    parent::__construct();
     $this->version = $version;
     $this->symmetric_algorithm = $symmetric_algorithm;
     $this->s2k = $s2k;
@@ -1784,6 +1786,7 @@ class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_EncryptedDataPacket {
   public $version;
 
   function __construct($data='', $version=1) {
+    parent::__construct();
     $this->version = $version;
     $this->data = $data;
   }
@@ -1805,6 +1808,7 @@ class OpenPGP_IntegrityProtectedDataPacket extends OpenPGP_EncryptedDataPacket {
  */
 class OpenPGP_ModificationDetectionCodePacket extends OpenPGP_Packet {
   function __construct($sha1='') {
+    parent::__construct();
     $this->data = $sha1;
   }
 
