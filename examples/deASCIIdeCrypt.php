@@ -14,7 +14,7 @@ $keyEncrypted = OpenPGP_Message::parse(OpenPGP::unarmor($keyASCII, 'PGP PRIVATE 
 
 // Try each secret key packet
 foreach($keyEncrypted as $p) {
-	if(!($p instanceof OpenPGP_SecretSubkeyPacket)) continue;
+	if(!($p instanceof OpenPGP_SecretKeyPacket)) continue;
 
 	$key = OpenPGP_Crypt_AES_TripleDES::decryptSecretKey($argv[2], $p);
 
