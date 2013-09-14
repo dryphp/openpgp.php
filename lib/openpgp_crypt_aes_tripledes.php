@@ -9,6 +9,7 @@ require_once 'Crypt/Random.php';
 class OpenPGP_Crypt_AES_TripleDES {
   public static function encrypt($passphrases_and_keys, $message, $symmetric_algorithm=9) {
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($symmetric_algorithm);
+    if(!$cipher) throw new Exception("Only AES/3DES are supported.");
     $prefix = crypt_random_string($key_block_bytes);
     $prefix .= substr($prefix, -2);
 
@@ -73,6 +74,7 @@ class OpenPGP_Crypt_AES_TripleDES {
     $packet = clone $packet; // Do not mutate orinigal
 
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($packet->symmetric_algorithm);
+    if(!$cipher) throw new Exception("Only AES/3DES are supported.");
     $cipher->setKey($packet->s2k->make_key($pass, $key_bytes));
     $cipher->setIV(substr($packet->encrypted_data, 0, $key_block_bytes));
     $material = $cipher->decrypt(substr($packet->encrypted_data, $key_block_bytes));
