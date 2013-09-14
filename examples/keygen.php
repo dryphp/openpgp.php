@@ -1,7 +1,7 @@
 <?php
 
-require dirname(__FILE__).'/../lib/openpgp.php';
-require dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
+require_once dirname(__FILE__).'/../lib/openpgp.php';
+require_once dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
 
 $rsa = new Crypt_RSA();
 $k = $rsa->createKey(512);
