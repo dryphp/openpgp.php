@@ -2,14 +2,14 @@
 
 require_once dirname(__FILE__).'/openpgp.php';
 @include_once dirname(__FILE__).'/openpgp_crypt_rsa.php';
-require_once 'Crypt/AES.php';
-require_once 'Crypt/TripleDES.php';
-require_once 'Crypt/Random.php';
+@include_once 'Crypt/AES.php';
+@include_once 'Crypt/TripleDES.php';
+require_once 'Crypt/Random.php'; // part of phpseclib is absolutely required
 
 class OpenPGP_Crypt_Symmetric {
   public static function encrypt($passphrases_and_keys, $message, $symmetric_algorithm=9) {
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($symmetric_algorithm);
-    if(!$cipher) throw new Exception("Only AES/3DES are supported.");
+    if(!$cipher) throw new Exception("Unsupported cipher");
     $prefix = crypt_random_string($key_block_bytes);
     $prefix .= substr($prefix, -2);
 
@@ -74,7 +74,7 @@ class OpenPGP_Crypt_Symmetric {
     $packet = clone $packet; // Do not mutate orinigal
 
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($packet->symmetric_algorithm);
-    if(!$cipher) throw new Exception("Only AES/3DES are supported.");
+    if(!$cipher) throw new Exception("Unsupported cipher");
     $cipher->setKey($packet->s2k->make_key($pass, $key_bytes));
     $cipher->setIV(substr($packet->encrypted_data, 0, $key_block_bytes));
     $material = $cipher->decrypt(substr($packet->encrypted_data, $key_block_bytes));
@@ -139,26 +139,33 @@ class OpenPGP_Crypt_Symmetric {
   }
 
   public static function getCipher($algo) {
+    $cipher = NULL;
     switch($algo) {
       case 2:
-        $cipher = new Crypt_TripleDES(CRYPT_DES_MODE_CFB);
-        $key_bytes = 24;
-        $key_block_bytes = 8;
+        if(class_exists('Crypt_TripleDES')) {
+          $cipher = new Crypt_TripleDES(CRYPT_DES_MODE_CFB);
+          $key_bytes = 24;
+          $key_block_bytes = 8;
+        }
         break;
       case 7:
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
-        $cipher->setKeyLength(128);
+        if(class_exists('Crypt_AES')) {
+          $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
+          $cipher->setKeyLength(128);
+        }
         break;
       case 8:
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
-        $cipher->setKeyLength(192);
+        if(class_exists('Crypt_AES')) {
+          $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
+          $cipher->setKeyLength(192);
+        }
         break;
       case 9:
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
-        $cipher->setKeyLength(256);
+        if(class_exists('Crypt_AES')) {
+          $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
+          $cipher->setKeyLength(256);
+        }
         break;
-      default:
-        $cipher = NULL;
     }
     if(!$cipher) return array(NULL, NULL, NULL); // Unsupported cipher
     if(!isset($key_bytes)) $key_bytes = $cipher->key_size;
