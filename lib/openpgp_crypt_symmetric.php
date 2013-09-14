@@ -2,6 +2,7 @@
 
 require_once dirname(__FILE__).'/openpgp.php';
 @include_once dirname(__FILE__).'/openpgp_crypt_rsa.php';
+@include_once dirname(__FILE__).'/openpgp_mcrypt_wrapper.php';
 @include_once 'Crypt/AES.php';
 @include_once 'Crypt/TripleDES.php';
 require_once 'Crypt/Random.php'; // part of phpseclib is absolutely required
@@ -146,6 +147,11 @@ class OpenPGP_Crypt_Symmetric {
           $cipher = new Crypt_TripleDES(CRYPT_DES_MODE_CFB);
           $key_bytes = 24;
           $key_block_bytes = 8;
+        }
+        break;
+      case 3:
+        if(defined('MCRYPT_CAST_128')) {
+          $cipher = new MCryptWrapper(MCRYPT_CAST_128);
         }
         break;
       case 7:
