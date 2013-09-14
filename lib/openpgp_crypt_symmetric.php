@@ -6,7 +6,7 @@ require_once 'Crypt/AES.php';
 require_once 'Crypt/TripleDES.php';
 require_once 'Crypt/Random.php';
 
-class OpenPGP_Crypt_AES_TripleDES {
+class OpenPGP_Crypt_Symmetric {
   public static function encrypt($passphrases_and_keys, $message, $symmetric_algorithm=9) {
     list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($symmetric_algorithm);
     if(!$cipher) throw new Exception("Only AES/3DES are supported.");

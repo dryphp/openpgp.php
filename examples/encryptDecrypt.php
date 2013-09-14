@@ -2,11 +2,11 @@
 
 require dirname(__FILE__).'/../lib/openpgp.php';
 require dirname(__FILE__).'/../lib/openpgp_crypt_rsa.php';
-require dirname(__FILE__).'/../lib/openpgp_crypt_aes_tripledes.php';
+require dirname(__FILE__).'/../lib/openpgp_crypt_symmetric.php';
 
 $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/../tests/data/helloKey.gpg'));
 $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
-$encrypted = OpenPGP_Crypt_AES_TripleDES::encrypt($key, new OpenPGP_Message(array($data)));
+$encrypted = OpenPGP_Crypt_Symmetric::encrypt($key, new OpenPGP_Message(array($data)));
 
 echo $encrypted->to_bytes();exit;
 

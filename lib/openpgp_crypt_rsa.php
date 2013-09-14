@@ -13,7 +13,7 @@
 require 'Crypt/RSA.php';
 
 require_once dirname(__FILE__).'/openpgp.php';
-@include_once dirname(__FILE__).'/openpgp_cryph_aes_tripledes.php'; /* For encrypt/decrypt */
+@include_once dirname(__FILE__).'/openpgp_crypt_symmetric.php'; /* For encrypt/decrypt */
 
 class OpenPGP_Crypt_RSA {
   protected $key, $message;
@@ -194,7 +194,7 @@ class OpenPGP_Crypt_RSA {
 
         if(!$sk) continue;
 
-        $r = OpenPGP_Crypt_AES_TripleDES::decryptPacket(OpenPGP_Crypt_AES_TripleDES::getEncryptedData($message), $sk[0], $sk[1]);
+        $r = OpenPGP_Crypt_Symmetric::decryptPacket(OpenPGP_Crypt_Symmetric::getEncryptedData($message), $sk[0], $sk[1]);
         if($r) return $r;
       }
     }
