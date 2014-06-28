@@ -4,9 +4,6 @@
  * OpenPGP_Crypt_RSA.php is a wrapper for using the classes from OpenPGP.php with Crypt_RSA
  *
  * @package OpenPGP
- * @version 0.0.1
- * @author  Stephen Paul Weber <singpolyma@singpolyma.net>
- * @link    http://github.com/singpolyma/openpgp-php
  */
 
 // From http://phpseclib.sourceforge.net/

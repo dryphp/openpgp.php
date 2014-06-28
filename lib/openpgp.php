@@ -8,7 +8,7 @@
  * @version 0.0.1
  * @author  Arto Bendiken <arto.bendiken@gmail.com>
  * @author  Stephen Paul Weber <singpolyma@singpolyma.net>
- * @link    http://github.com/bendiken/openpgp-php
+ * @see     http://github.com/bendiken/openpgp-php
  */
 
 //////////////////////////////////////////////////////////////////////////////
@@ -260,7 +260,7 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
    *
    * Recurses into CompressedDataPacket
    *
-   * <http://tools.ietf.org/html/rfc4880#section-11>
+   * @see http://tools.ietf.org/html/rfc4880#section-11
    */
   function signatures() {
     $msg = $this;
