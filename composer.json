@@ -1,7 +1,6 @@
 {
   "name": "singpolyma/openpgp-php",
   "description": "Pure-PHP implementation of the OpenPGP Message Format (RFC 4880)",
-  "minimum-stability": "stable",
   "license": "Unlicense",
   "authors": [
     {
