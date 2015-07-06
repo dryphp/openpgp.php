@@ -7,7 +7,7 @@
  */
 
 // From http://phpseclib.sourceforge.net/
-require 'Crypt/RSA.php';
+require_once 'Crypt/RSA.php';
 
 require_once dirname(__FILE__).'/openpgp.php';
 @include_once dirname(__FILE__).'/openpgp_crypt_symmetric.php'; /* For encrypt/decrypt */
