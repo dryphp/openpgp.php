@@ -501,7 +501,7 @@ class OpenPGP_Packet {
         $data_length = strlen($input) - $head_length;
         break;
     }
-    return array($tag, $head_length, $data_length);
+    return array($tag, $head_length, $data_length, false);
   }
 
   function __construct($data=NULL) {
