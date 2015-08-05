@@ -411,6 +411,8 @@ class OpenPGP_Packet {
 
   /**
    * Parses an OpenPGP packet.
+   * 
+   * Partial body lengths based on https://github.com/toofishes/python-pgpdump/blob/master/pgpdump/packet.py
    *
    * @see http://tools.ietf.org/html/rfc4880#section-4.2
    */
@@ -418,18 +420,33 @@ class OpenPGP_Packet {
     $packet = NULL;
     if (strlen($input) > 0) {
       $parser = ord($input[0]) & 64 ? 'parse_new_format' : 'parse_old_format';
-      list($tag, $head_length, $data_length) = self::$parser($input);
-      $input = substr($input, $head_length);
+
+      $header_start0 = 0;
+      $consumed = 0;
+      $packet_data = "";
+      do {
+          list($tag, $data_offset, $data_length, $partial) = self::$parser($input, $header_start0);
+
+          $data_start0 = $header_start0 + $data_offset;
+          $header_start0 = $data_start0 + $data_length - 1;
+          $packet_data .= substr($input, $data_start0, $data_length);
+
+          $consumed += $data_offset + $data_length;
+          if ($partial) {
+              $consumed -= 1;
+          }
+      } while ($partial === true && $parser === 'parse_new_format');
+
       if ($tag && ($class = self::class_for($tag))) {
         $packet = new $class();
         $packet->tag    = $tag;
-        $packet->input  = substr($input, 0, $data_length);
-        $packet->length = $data_length;
+        $packet->input  = $packet_data;
+        $packet->length = strlen($packet_data);
         $packet->read();
         unset($packet->input);
         unset($packet->length);
       }
-      $input = substr($input, $data_length);
+      $input = substr($input, $consumed);
     }
     return $packet;
   }
@@ -441,18 +458,19 @@ class OpenPGP_Packet {
    */
   static function parse_new_format($input) {
     $tag = ord($input[0]) & 63;
-    $len = ord($input[1]);
+    $len = ord($input[$header_start + 1]);
     if($len < 192) { // One octet length
-      return array($tag, 2, $len);
+      return array($tag, 2, $len, false);
     }
     if($len > 191 && $len < 224) { // Two octet length
-      return array($tag, 3, (($len - 192) << 8) + ord($input[2]) + 192);
+      return array($tag, 3, (($len - 192) << 8) + ord($input[$header_start + 2]) + 192, false);
     }
     if($len == 255) { // Five octet length
-      $unpacked = unpack('N', substr($input, 2, 4));
-      return array($tag, 6, reset($unpacked));
+      $unpacked = unpack('N', substr($input, $header_start + 2, 4));
+      return array($tag, 6, reset($unpacked), false);
     }
-    // TODO: Partial body lengths. 1 << ($len & 0x1F)
+    // Partial body lengths
+    return array($tag, 2, 1 << ($len & 0x1f), true);
   }
 
   /**
