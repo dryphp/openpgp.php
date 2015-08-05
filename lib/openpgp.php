@@ -456,7 +456,7 @@ class OpenPGP_Packet {
    *
    * @see http://tools.ietf.org/html/rfc4880#section-4.2.2
    */
-  static function parse_new_format($input) {
+  static function parse_new_format($input, $header_start = 0) {
     $tag = ord($input[0]) & 63;
     $len = ord($input[$header_start + 1]);
     if($len < 192) { // One octet length
