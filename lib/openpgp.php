@@ -1327,15 +1327,32 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
 
   function __construct($key=array(), $algorithm='RSA', $timestamp=NULL, $version=4) {
     parent::__construct();
-    $this->key = $key;
-    if(is_string($this->algorithm = $algorithm)) {
-      $this->algorithm = array_search($this->algorithm, self::$algorithms);
-    }
-    $this->timestamp = $timestamp ? $timestamp : time();
-    $this->version = $version;
 
-    if(count($this->key) > 0) {
-      $this->key_id = substr($this->fingerprint(), -8);
+    if($key instanceof OpenPGP_PublicKeyPacket) {
+      $this->algorithm = $key->algorithm;
+      $this->key = array();
+
+      // Restrict to only the fields we need
+      foreach (self::$key_fields[$this->algorithm] as $field) {
+        $this->key[$field] = $key->key[$field];
+      }
+
+      $this->key_id = $key->key_id;
+      $this->fingerprint = $key->fingerprint;
+      $this->timestamp = $key->timestamp;
+      $this->version = $key->version;
+      $this->v3_days_of_validity = $key->v3_days_of_validity;
+    } else {
+      $this->key = $key;
+      if(is_string($this->algorithm = $algorithm)) {
+        $this->algorithm = array_search($this->algorithm, self::$algorithms);
+      }
+      $this->timestamp = $timestamp ? $timestamp : time();
+      $this->version = $version;
+
+      if(count($this->key) > 0) {
+        $this->key_id = substr($this->fingerprint(), -8);
+      }
     }
   }
 
