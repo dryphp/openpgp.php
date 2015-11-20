@@ -7,7 +7,11 @@
  */
 
 // From http://phpseclib.sourceforge.net/
-require_once 'Crypt/RSA.php';
+use phpseclib\Crypt\RSA as Crypt_RSA;
+use phpseclib\Math\BigInteger as Math_BigInteger;
+
+define('CRYPT_RSA_ENCRYPTION_PKCS1', Crypt_RSA::ENCRYPTION_PKCS1);
+define('CRYPT_RSA_SIGNATURE_PKCS1', Crypt_RSA::SIGNATURE_PKCS1);
 
 require_once dirname(__FILE__).'/openpgp.php';
 @include_once dirname(__FILE__).'/openpgp_crypt_symmetric.php'; /* For encrypt/decrypt */
