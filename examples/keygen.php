@@ -11,8 +11,8 @@ $nkey = new OpenPGP_SecretKeyPacket(array(
    'n' => $rsa->modulus->toBytes(),
    'e' => $rsa->publicExponent->toBytes(),
    'd' => $rsa->exponent->toBytes(),
-   'p' => $rsa->primes[1]->toBytes(),
-   'q' => $rsa->primes[2]->toBytes(),
+   'p' => $rsa->primes[2]->toBytes(),
+   'q' => $rsa->primes[1]->toBytes(),
    'u' => $rsa->coefficients[2]->toBytes()
 ));
 
