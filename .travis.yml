@@ -9,7 +9,8 @@ php:
 #  - nightly
 
 env:
-  - PHPSECLIB="^2.0"
   - PHPSECLIB="2.0.0"
+  - PHPSECLIB="2.0.1"
+  - PHPSECLIB="2.0.2"
 
 before_script: 'sed -i "s/\"phpseclib\/phpseclib\": \"[^\"]*/\"phpseclib\/phpseclib\": \"$PHPSECLIB/" composer.json && composer install --prefer-source --dev'
