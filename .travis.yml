@@ -12,5 +12,7 @@ env:
   - PHPSECLIB="2.0.0"
   - PHPSECLIB="2.0.1"
   - PHPSECLIB="2.0.2"
+  - PHPSECLIB="2.0.3"
+  - PHPSECLIB="2.0.4"
 
 before_script: 'sed -i "s/\"phpseclib\/phpseclib\": \"[^\"]*/\"phpseclib\/phpseclib\": \"$PHPSECLIB/" composer.json && composer install --prefer-source --dev'

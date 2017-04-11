@@ -245,8 +245,18 @@ class OpenPGP_Crypt_RSA {
     $rsa = self::crypt_rsa_key($mod, $exp);
 
     if($private) {
-      if($packet->key['p'] && $packet->key['q']) $rsa->primes = array($packet->key['p'], $packet->key['q']);
-      if($packet->key['u']) $rsa->coefficients = array($packet->key['u']);
+        /**
+         * @see https://github.com/phpseclib/phpseclib/issues/1113
+         * Primes and coefficients now use BigIntegers.
+         **/
+        //set the primes
+        if($packet->key['p'] && $packet->key['q'])
+            $rsa->primes = array(
+                1 => new Math_BigInteger($packet->key['p'], 256),
+                2 => new Math_BigInteger($packet->key['q'], 256)
+            );
+        // set the coefficients
+        if($packet->key['u']) $rsa->coefficients = array(2 => new Math_BigInteger($packet->key['u'], 256));
     }
 
     return $rsa;
