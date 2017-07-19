@@ -8,6 +8,8 @@ php:
   - hhvm
 #  - nightly
 
+dist: trusty
+
 env:
   - PHPSECLIB="2.0.0"
   - PHPSECLIB="2.0.1"
