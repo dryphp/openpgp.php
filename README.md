@@ -3,7 +3,7 @@ OpenPGP.php: OpenPGP for PHP
 
 This is a pure-PHP implementation of the OpenPGP Message Format (RFC 4880).
 
-* <http://github.com/bendiken/openpgp-php>
+* <https://github.com/bendiken/openpgp-php>
 
 ### About OpenPGP
 
@@ -13,8 +13,8 @@ Force (IETF) Proposed Standard RFC 4880. The OpenPGP standard was originally
 derived from PGP (Pretty Good Privacy), first created by Phil Zimmermann in
 1991.
 
-* <http://tools.ietf.org/html/rfc4880>
-* <http://www.openpgp.org/>
+* <https://tools.ietf.org/html/rfc4880>
+* <https://www.openpgp.org/>
 
 Features
 --------
@@ -43,16 +43,16 @@ To get a local working copy of the development repository, do:
 Alternatively, you can download the latest development version as a tarball
 as follows:
 
-    % wget http://github.com/bendiken/openpgp-php/tarball/master
+    % wget https://github.com/bendiken/openpgp-php/tarball/master
 
 Authors
 -------
 
 * [Arto Bendiken](mailto:arto.bendiken@gmail.com) - <http://ar.to/>
-* [Stephen Paul Weber](mailto:singpolyma@singpolyma.net) - <http://singpolyma.net/>
+* [Stephen Paul Weber](mailto:singpolyma@singpolyma.net) - <https://singpolyma.net/>
 
 License
 -------
 
 OpenPGP.php is free and unencumbered public domain software. For more
-information, see <http://unlicense.org/> or the accompanying UNLICENSE file.
+information, see <https://unlicense.org/> or the accompanying UNLICENSE file.
