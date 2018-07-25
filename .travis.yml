@@ -9,11 +9,18 @@ php:
 dist: trusty
 
 env:
+  - PHPSECLIB='^2.0 !=2.0.8'
   - PHPSECLIB="2.0.0"
   - PHPSECLIB="2.0.1"
   - PHPSECLIB="2.0.2"
   - PHPSECLIB="2.0.3"
   - PHPSECLIB="2.0.4"
+  - PHPSECLIB="2.0.5"
+  - PHPSECLIB="2.0.6"
+  - PHPSECLIB="2.0.7"
+  - PHPSECLIB="2.0.9"
+  - PHPSECLIB="2.0.10"
+  - PHPSECLIB="2.0.11"
 
 matrix:
   allow_failures:
