@@ -159,8 +159,6 @@ class OpenPGP_Crypt_Symmetric {
           $cipher = new OpenSSLWrapper("CAST5-CFB");
         } else if(defined('MCRYPT_CAST_128')) {
           $cipher = new MCryptWrapper(MCRYPT_CAST_128);
-        } else {
-          throw new Exception("Unsupported cipher: you must have mcrypt installed to use CAST5");
         }
         break;
       case 4:
