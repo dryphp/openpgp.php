@@ -80,7 +80,7 @@ class Decryption extends PHPUnit_Framework_TestCase {
     $this->oneSymmetric("hello", "PGP\n", "symmetric-3des.gpg");
   }
 
-  public function testDecryptCAST5() { // Requires mcrypt
+  public function testDecryptCAST5() { // Requires mcrypt or openssl
     $this->oneSymmetric("hello", "PGP\n", "symmetric-cast5.gpg");
   }
 
@@ -152,11 +152,41 @@ class Decryption extends PHPUnit_Framework_TestCase {
 }
 
 class Encryption extends PHPUnit_Framework_TestCase {
-  public function testEncryptSymmetric() {
+  public function oneSymmetric($algorithm) {
     $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
-    $encrypted = OpenPGP_Crypt_Symmetric::encrypt('secret', new OpenPGP_Message(array($data)));
+    $encrypted = OpenPGP_Crypt_Symmetric::encrypt('secret', new OpenPGP_Message(array($data)), $algorithm);
     $decrypted = OpenPGP_Crypt_Symmetric::decryptSymmetric('secret', $encrypted);
     $this->assertEquals($decrypted[0]->data, 'This is text.');
+  }
+
+  public function testEncryptSymmetric3DES() {
+    $this->oneSymmetric(2);
+  }
+
+  public function testEncryptSymmetricCAST5() {
+    $this->oneSymmetric(3);
+  }
+
+  public function testEncryptSymmetricBlowfish() {
+    $this->oneSymmetric(4);
+  }
+
+  public function testEncryptSymmetricAES128() {
+    $this->oneSymmetric(7);
+  }
+
+  public function testEncryptSymmetricAES192() {
+    $this->oneSymmetric(8);
+  }
+
+  public function testEncryptSymmetricAES256() {
+    $this->oneSymmetric(9);
+  }
+
+  public function testEncryptSymmetricTwofish() {
+    if(OpenPGP_Crypt_Symmetric::getCipher(10)[0]) {
+      $this->oneSymmetric(10);
+    }
   }
 
   public function testEncryptAsymmetric() {

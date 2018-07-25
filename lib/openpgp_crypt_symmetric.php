@@ -9,6 +9,7 @@ use phpseclib\Crypt\Random;
 require_once dirname(__FILE__).'/openpgp.php';
 @include_once dirname(__FILE__).'/openpgp_crypt_rsa.php';
 @include_once dirname(__FILE__).'/openpgp_mcrypt_wrapper.php';
+@include_once dirname(__FILE__).'/openpgp_openssl_wrapper.php';
 
 class OpenPGP_Crypt_Symmetric {
   public static function encrypt($passphrases_and_keys, $message, $symmetric_algorithm=9) {
@@ -154,7 +155,9 @@ class OpenPGP_Crypt_Symmetric {
         $key_block_bytes = 8;
         break;
       case 3:
-        if(defined('MCRYPT_CAST_128')) {
+        if(class_exists('OpenSSLWrapper')) {
+          $cipher = new OpenSSLWrapper("CAST5-CFB");
+        } else if(defined('MCRYPT_CAST_128')) {
           $cipher = new MCryptWrapper(MCRYPT_CAST_128);
         } else {
           throw new Exception("Unsupported cipher: you must have mcrypt installed to use CAST5");
