@@ -685,7 +685,9 @@ class OpenPGP_SignaturePacket extends OpenPGP_Packet {
     switch($this->version = ord($this->read_byte())) {
       case 2:
       case 3:
-        assert(ord($this->read_byte()) == 5);
+        if(ord($this->read_byte()) != 5) {
+          throw new Exception("Invalid version 2 or 3 SignaturePacket");
+        }
         $this->signature_type = ord($this->read_byte());
         $creation_time = $this->read_timestamp();
         $keyid = $this->read_bytes(8);
