@@ -150,10 +150,12 @@ class OpenPGP_S2K {
         $bytes .= chr($this->hash_algorithm);
         break;
       case 1:
+        if(strlen($this->salt) != 8) throw new Exception("Invalid salt length");
         $bytes .= chr($this->hash_algorithm);
         $bytes .= $this->salt;
         break;
       case 3:
+        if(strlen($this->salt) != 8) throw new Exception("Invalid salt length");
         $bytes .= chr($this->hash_algorithm);
         $bytes .= $this->salt;
         $bytes .= chr(OpenPGP::encode_s2k_count($this->count));

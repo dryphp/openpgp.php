@@ -155,6 +155,7 @@ class Encryption extends PHPUnit_Framework_TestCase {
   public function oneSymmetric($algorithm) {
     $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
     $encrypted = OpenPGP_Crypt_Symmetric::encrypt('secret', new OpenPGP_Message(array($data)), $algorithm);
+    $encrypted = OpenPGP_Message::parse($encrypted->to_bytes());
     $decrypted = OpenPGP_Crypt_Symmetric::decryptSymmetric('secret', $encrypted);
     $this->assertEquals($decrypted[0]->data, 'This is text.');
   }
@@ -193,6 +194,7 @@ class Encryption extends PHPUnit_Framework_TestCase {
     $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/helloKey.gpg'));
     $data = new OpenPGP_LiteralDataPacket('This is text.', array('format' => 'u', 'filename' => 'stuff.txt'));
     $encrypted = OpenPGP_Crypt_Symmetric::encrypt($key, new OpenPGP_Message(array($data)));
+    $encrypted = OpenPGP_Message::parse($encrypted->to_bytes());
     $decryptor = new OpenPGP_Crypt_RSA($key);
     $decrypted = $decryptor->decrypt($encrypted);
     $this->assertEquals($decrypted[0]->data, 'This is text.');
