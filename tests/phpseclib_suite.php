@@ -114,6 +114,13 @@ class Decryption extends PHPUnit_Framework_TestCase {
     $skey = OpenPGP_Crypt_Symmetric::decryptSecretKey("hello", $key[0]);
     $this->assertSame(!!$skey, true);
   }
+
+  public function testAlreadyDecryptedSecretKey() {
+    $this->expectException(Exception::class);
+    $this->expectExceptionMessage("Data is already unencrypted");
+    $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/helloKey.gpg'));
+    OpenPGP_Crypt_Symmetric::decryptSecretKey("hello", $key[0]);
+  }
 }
 
 class Encryption extends PHPUnit_Framework_TestCase {

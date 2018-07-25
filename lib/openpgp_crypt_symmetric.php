@@ -146,6 +146,9 @@ class OpenPGP_Crypt_Symmetric {
   public static function getCipher($algo) {
     $cipher = NULL;
     switch($algo) {
+		case NULL:
+		case 0:
+			throw new Exception("Data is already unencrypted");
       case 2:
           $cipher = new Crypt_TripleDES(CRYPT_DES_MODE_CFB);
           $key_bytes = 24;
