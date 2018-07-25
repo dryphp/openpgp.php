@@ -76,16 +76,26 @@ class Decryption extends PHPUnit_Framework_TestCase {
     }
   }
 
-  public function testDecryptAES() {
-    $this->oneSymmetric("hello", "PGP\n", "symmetric-aes.gpg");
-  }
-
   public function testDecrypt3DES() {
     $this->oneSymmetric("hello", "PGP\n", "symmetric-3des.gpg");
   }
 
   public function testDecryptCAST5() { // Requires mcrypt
     $this->oneSymmetric("hello", "PGP\n", "symmetric-cast5.gpg");
+  }
+
+  public function testDecryptBlowfish() {
+    $this->oneSymmetric("hello", "PGP\n", "symmetric-blowfish.gpg");
+  }
+
+  public function testDecryptAES() {
+    $this->oneSymmetric("hello", "PGP\n", "symmetric-aes.gpg");
+  }
+
+  public function testDecryptTwofish() {
+    if(OpenPGP_Crypt_Symmetric::getCipher(10)[0]) {
+      $this->oneSymmetric("hello", "PGP\n", "symmetric-twofish.gpg");
+    }
   }
 
   public function testDecryptSessionKey() {
