@@ -208,7 +208,8 @@ class OpenPGP_Crypt_RSA {
 
   static function try_decrypt_session($key, $edata) {
     $key->setEncryptionMode(CRYPT_RSA_ENCRYPTION_PKCS1);
-    $data = $key->decrypt($edata);
+    $data = @$key->decrypt($edata);
+    if(!$data) return NULL;
     $sk = substr($data, 1, strlen($data)-3);
     $chk = unpack('n', substr($data, -2));
     $chk = reset($chk);

@@ -109,6 +109,24 @@ class Decryption extends PHPUnit_Framework_TestCase {
     }
   }
 
+  public function testDecryptRoundtrip() {
+    $m = new OpenPGP_Message(array(new OpenPGP_LiteralDataPacket("hello\n")));
+    $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/helloKey.gpg'));
+    $em = OpenPGP_Crypt_Symmetric::encrypt($key, $m);
+
+    foreach($key as $packet) {
+	   if(!($packet instanceof OpenPGP_SecretKeyPacket)) continue;
+      $decryptor = new OpenPGP_Crypt_RSA($packet);
+      $m2 = $decryptor->decrypt($em);
+
+      foreach($m2 as $p) {
+        if($p instanceof OpenPGP_LiteralDataPacket) {
+          $this->assertEquals($p->data, "hello\n");
+        }
+      }
+    }
+  }
+
   public function testDecryptSecretKey() {
     $key = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/encryptedSecretKey.gpg'));
     $skey = OpenPGP_Crypt_Symmetric::decryptSecretKey("hello", $key[0]);
