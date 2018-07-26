@@ -18,6 +18,8 @@
  * @see http://tools.ietf.org/html/rfc4880
  */
 class OpenPGP {
+  const VERSION = array(0, 3, 0);
+
   /**
    * @see http://tools.ietf.org/html/rfc4880#section-6
    * @see http://tools.ietf.org/html/rfc4880#section-6.2
