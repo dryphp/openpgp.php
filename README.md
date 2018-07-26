@@ -5,9 +5,10 @@ OpenPGP.php: OpenPGP for PHP
 
 This is a pure-PHP implementation of the OpenPGP Message Format (RFC 4880).
 
-* <https://github.com/bendiken/openpgp-php>
+* <https://github.com/singpolyma/openpgp-php>
 
-### About OpenPGP
+About OpenPGP
+-------------
 
 OpenPGP is the most widely-used e-mail encryption standard in the world. It
 is defined by the OpenPGP Working Group of the Internet Engineering Task
@@ -24,15 +25,26 @@ Features
 * Encodes and decodes ASCII-armored OpenPGP messages.
 * Parses OpenPGP messages into their constituent packets.
   * Supports both old-format (PGP 2.6.x) and new-format (RFC 4880) packets.
-* Helper class for verifying, signing, encrypting, and decrypting messages using Crypt_RSA from <http://phpseclib.sourceforge.net>
-* Helper class for encrypting and decrypting messages and keys using Crypt_AES and Crypt_TripleDES from <http://phpseclib.sourceforge.net>
+* Helper class for verifying, signing, encrypting, and decrypting messages <http://phpseclib.sourceforge.net>
+* Helper class for encrypting and decrypting messages and keys using <http://phpseclib.sourceforge.net>
+  * openssl or mcrypt required for CAST5 encryption and decryption
+
+Bugs, Feature Requests, Patches
+-------------------------------
+
+This project is primarily maintained by a single volunteer with many other
+things vying for their attention, please be patient.
+
+Bugs, feature request, pull requests, patches, and general discussion may
+be submitted publicly via email to: dev@singpolyma.net
+
+Github users may alternately submit on the web there.
 
 Users
 -----
 
 OpenPGP.php is currently being used in the following projects:
 
-* <https://drupal.org/project/openpgp>
 * <https://wordpress.org/plugins/wp-pgp-encrypted-emails/>
 
 Download
@@ -40,18 +52,18 @@ Download
 
 To get a local working copy of the development repository, do:
 
-    % git clone git://github.com/bendiken/openpgp-php.git
+    git clone https://github.com/singpolyma/openpgp-php.git
 
 Alternatively, you can download the latest development version as a tarball
 as follows:
 
-    % wget https://github.com/bendiken/openpgp-php/tarball/master
+    wget https://github.com/singpolyma/openpgp-php/tarball/master
 
 Authors
 -------
 
-* [Arto Bendiken](mailto:arto.bendiken@gmail.com) - <http://ar.to/>
-* [Stephen Paul Weber](mailto:singpolyma@singpolyma.net) - <https://singpolyma.net/>
+* [Arto Bendiken](mailto:arto.bendiken@gmail.com) (Original author) - <http://ar.to/>
+* [Stephen Paul Weber](mailto:singpolyma@singpolyma.net) (Maintainer) - <https://singpolyma.net/>
 
 License
 -------
