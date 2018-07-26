@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/singpolyma/openpgp-php.svg?branch=master)](https://travis-ci.org/singpolyma/openpgp-php)
+
 OpenPGP.php: OpenPGP for PHP
 ============================
 
