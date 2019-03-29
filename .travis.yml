@@ -1,3 +1,4 @@
+---
 language: php
 php:
   - 7.0
@@ -48,4 +49,4 @@ matrix:
     - env: PHPSECLIB="2.0.6"
   fast_finish: true
 
-before_script: 'sed -i "s/\"phpseclib\/phpseclib\": \"[^\"]*/\"phpseclib\/phpseclib\": \"$PHPSECLIB/" composer.json && composer install --prefer-source --dev'
+before_script: 'sed -i "s/\"phpseclib\/phpseclib\": \"[^\"]*/\"phpseclib\/phpseclib\": \"$PHPSECLIB/" composer.json && composer install --prefer-source'
