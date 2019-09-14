@@ -75,6 +75,31 @@ class OpenPGP_Crypt_Symmetric {
     return NULL; /* If we get here, we failed */
   }
 
+  public static function encryptSecretKey($pass, $packet, $symmetric_algorithm=9) {
+    $packet = clone $packet; // Do not mutate original
+    $packet->s2k_useage = 254;
+    $packet->symmetric_algorithm = $symmetric_algorithm;
+
+    list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($packet->symmetric_algorithm);
+    if(!$cipher) throw new Exception("Unsupported cipher");
+
+    $material = '';
+    foreach(OpenPGP_SecretKeyPacket::$secret_key_fields[$packet->algorithm] as $field) {
+      $f = $packet->key[$field];
+      $material .= pack('n', OpenPGP::bitlength($f)) . $f;
+      unset($packet->key[$field]);
+    }
+    $material .= hash('sha1', $material, true);
+
+    $iv = Random::string($key_block_bytes);
+    if(!$packet->s2k) $packet->s2k = new OpenPGP_S2K(Random::string(8));
+    $cipher->setKey($packet->s2k->make_key($pass, $key_bytes));
+    $cipher->setIV($iv);
+    $packet->encrypted_data = $iv . $cipher->encrypt($material);
+
+    return $packet;
+  }
+
   public static function decryptSecretKey($pass, $packet) {
     $packet = clone $packet; // Do not mutate orinigal
 
@@ -97,6 +122,7 @@ class OpenPGP_Crypt_Symmetric {
       if($chk != $mkChk) return NULL;
     }
 
+    $packet->s2k = NULL;
     $packet->s2k_useage = 0;
     $packet->symmetric_algorithm = 0;
     $packet->encrypted_data = NULL;
