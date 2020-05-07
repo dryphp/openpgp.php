@@ -396,4 +396,12 @@ class Fingerprint extends PHPUnit_Framework_TestCase {
   public function test000035006public_key() {
     $this->oneFingerprint("000035-006.public_key", "CB7933459F59C70DF1C3FBEEDEDC3ECF689AF56D");
   }
+
+  public function test000080006public_key() {
+    $this->oneFingerprint("000080-006.public_key", "AEDA0C4468AE265E8B7CCA1C3047D4A7B15467AB");
+  }
+
+  public function test000082006public_key() {
+    $this->oneFingerprint("000082-006.public_key", "589D7E6884A9235BBE821D35BD7BA7BC5547FD09");
+  }
 }
