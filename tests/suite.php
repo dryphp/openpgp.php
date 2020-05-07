@@ -405,3 +405,22 @@ class Fingerprint extends PHPUnit_Framework_TestCase {
     $this->oneFingerprint("000082-006.public_key", "589D7E6884A9235BBE821D35BD7BA7BC5547FD09");
   }
 }
+
+class Signature extends PHPUnit_Framework_TestCase {
+  public function oneIssuer($path, $kf) {
+    $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
+    $this->assertEquals($m[0]->issuer(), $kf);
+  }
+
+  public function test000079002sig() {
+    $this->oneIssuer("000079-002.sig", "C25059FA8730BC38");
+  }
+
+  public function test000081002sig() {
+    $this->oneIssuer("000081-002.sig", "6B799484725130FE");
+  }
+
+  public function test000083002sig() {
+    $this->oneIssuer("000083-002.sig", "BD7BA7BC5547FD09");
+  }
+}
