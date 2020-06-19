@@ -62,7 +62,7 @@ class OpenPGP_Crypt_Symmetric {
 
           $padAmount = $key_block_bytes - (strlen($p->encrypted_data) % $key_block_bytes);
           $data = substr($cipher->decrypt($p->encrypted_data . str_repeat("\0", $padAmount)), 0, strlen($p->encrypted_data));
-          $decrypted = self::decryptPacket($epacket, ord($data{0}), substr($data, 1));
+          $decrypted = self::decryptPacket($epacket, ord($data[0]), substr($data, 1));
         } else {
           list($cipher, $key_bytes, $key_block_bytes) = self::getCipher($p->symmetric_algorithm);
           $decrypted = self::decryptPacket($epacket, $p->symmetric_algorithm, $p->s2k->make_key($pass, $key_bytes));
@@ -229,7 +229,7 @@ class OpenPGP_Crypt_Symmetric {
   public static function checksum($s) {
     $mkChk = 0;
     for($i = 0; $i < strlen($s); $i++) {
-      $mkChk = ($mkChk + ord($s{$i})) % 65536;
+      $mkChk = ($mkChk + ord($s[$i])) % 65536;
     }
     return $mkChk;
   }

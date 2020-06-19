@@ -216,11 +216,11 @@ class OpenPGP_Crypt_RSA {
 
     $sk_chk = 0;
     for($i = 0; $i < strlen($sk); $i++) {
-      $sk_chk = ($sk_chk + ord($sk{$i})) % 65536;
+      $sk_chk = ($sk_chk + ord($sk[$i])) % 65536;
     }
 
     if($sk_chk != $chk) return NULL;
-    return array(ord($data{0}), $sk);
+    return array(ord($data[0]), $sk);
   }
 
   static function crypt_rsa_key($mod, $exp, $hash='SHA256') {
