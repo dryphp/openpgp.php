@@ -1,8 +1,9 @@
 <?php
+use PHPUnit\Framework\TestCase;
 
 require_once dirname(__FILE__).'/../lib/openpgp.php';
 
-class Serialization extends PHPUnit_Framework_TestCase {
+class Serialization extends TestCase {
   public function oneSerialization($path) {
     $in = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
     $mid = $in->to_bytes();
@@ -375,7 +376,7 @@ class Serialization extends PHPUnit_Framework_TestCase {
   }
 }
 
-class Fingerprint extends PHPUnit_Framework_TestCase {
+class Fingerprint extends TestCase {
   public function oneFingerprint($path, $kf) {
     $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
     $this->assertEquals($m[0]->fingerprint(), $kf);
@@ -406,7 +407,7 @@ class Fingerprint extends PHPUnit_Framework_TestCase {
   }
 }
 
-class Signature extends PHPUnit_Framework_TestCase {
+class Signature extends TestCase {
   public function oneIssuer($path, $kf) {
     $m = OpenPGP_Message::parse(file_get_contents(dirname(__FILE__) . '/data/' . $path));
     $this->assertEquals($m[0]->issuer(), $kf);
