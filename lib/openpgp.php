@@ -44,8 +44,13 @@ class OpenPGP {
     $header = self::header($header);
     $text = str_replace(array("\r\n", "\r"), array("\n", ''), $text);
     if (($pos1 = strpos($text, $header)) !== FALSE &&
-        ($pos1 = strpos($text, "\n\n", $pos1 += strlen($header))) !== FALSE &&
-        ($pos2 = strpos($text, "\n=", $pos1 += 2)) !== FALSE) {
+        ($pos1 = strpos($text, "\n\n", $pos1 += strlen($header))) !== FALSE) {
+      $pos2 = strpos($text, "\n=", $pos1 += 2);
+      if ($pos2 === FALSE) {
+        trigger_error("Invalid ASCII armor, missing CRC");
+        $pos2 = strpos($text, "-----END");
+        if ($pos2 === FALSE) return NULL;
+      }
       return base64_decode($text = substr($text, $pos1, $pos2 - $pos1));
     }
   }
