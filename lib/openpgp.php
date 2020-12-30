@@ -1605,6 +1605,13 @@ class OpenPGP_CompressedDataPacket extends OpenPGP_Packet implements IteratorAgg
   public $algorithm;
   /* see http://tools.ietf.org/html/rfc4880#section-9.3 */
   static $algorithms = array(0 => 'Uncompressed', 1 => 'ZIP', 2 => 'ZLIB', 3 => 'BZip2');
+
+  function __construct($m=NULL, $algorithm=1) {
+    parent::__construct();
+    $this->algorithm = $algorithm;
+    $this->data = $m ? $m : new OpenPGP_Message();
+  }
+
   function read() {
     $this->algorithm = ord($this->read_byte());
     $this->data = $this->read_bytes($this->length);
