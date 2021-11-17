@@ -336,7 +336,7 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
 
   /**
    * Function to extract verified signatures
-   * $verifiers is an array of callbacks formatted like array('RSA' => array('SHA256' => CALLBACK)) that take two parameters: raw message and signature packet
+   * $verifiers is an array of callbacks formatted like array('RSA' => CALLBACK) or array('RSA' => array('SHA256' => CALLBACK)) that take two parameters: raw message and signature packet
    */
   function verified_signatures($verifiers) {
     $signed = $this->signatures();
@@ -347,7 +347,8 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
       $vsigs = array();
 
       foreach($signatures as $sig) {
-        $verifier = $verifiers[$sig->key_algorithm_name()][$sig->hash_algorithm_name()];
+        $verifier = $verifiers[$sig->key_algorithm_name()];
+        if(is_array($verifier)) $verifier = $verifier[$sig->hash_algorithm_name()];
         if($verifier && $this->verify_one($verifier, $sign, $sig)) {
           $vsigs[] = $sig;
         }
