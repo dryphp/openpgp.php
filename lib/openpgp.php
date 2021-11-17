@@ -1423,7 +1423,14 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
    */
   function read_key_material() {
     foreach (self::$key_fields[$this->algorithm] as $field) {
-      $this->key[$field] = $this->read_mpi();
+      if (strlen($field) == 1) {
+        $this->key[$field] = $this->read_mpi();
+      } else if ($field == 'oid') {
+        $len = ord($this->read_byte());
+        $this->key[$field] = $this->read_bytes($len);
+      } else {
+        $this->key[$field] = ord($this->read_byte());
+      }
     }
     $this->key_id = substr($this->fingerprint(), -8);
   }
@@ -1433,8 +1440,8 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
       case 3:
         $material = array();
         foreach (self::$key_fields[$this->algorithm] as $i) {
-          $material[] = pack('n', OpenPGP::bitlength($this->key[$i]));
-          $material[] = $this->key[$i];
+            $material[] = pack('n', OpenPGP::bitlength($this->key[$i]));
+            $material[] = $this->key[$i];
         }
         return $material;
       case 4:
@@ -1445,8 +1452,15 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
         );
         $material = array();
         foreach (self::$key_fields[$this->algorithm] as $i) {
-          $material[] = pack('n', OpenPGP::bitlength($this->key[$i]));
-          $material[] = $this->key[$i];
+          if (strlen($i) == 1) {
+            $material[] = pack('n', OpenPGP::bitlength($this->key[$i]));
+            $material[] = $this->key[$i];
+          } else if ($i == 'oid') {
+            $material[] = chr(strlen($this->key[$i]));
+            $material[] = $this->key[$i];
+          } else {
+            $material[] = chr($this->key[$i]);
+          }
         }
         $material = implode('', $material);
         $head[1] = pack('n', 6 + strlen($material));
@@ -1484,9 +1498,12 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
   }
 
   static $key_fields = array(
-     1 => array('n', 'e'),           // RSA
-    16 => array('p', 'g', 'y'),      // ELG-E
-    17 => array('p', 'q', 'g', 'y'), // DSA
+     1 => array('n', 'e'),
+    16 => array('p', 'g', 'y'),
+    17 => array('p', 'q', 'g', 'y'),
+    18 => array('oid', 'p', 'len', 'future', 'hash', 'algorithm'),
+    19 => array('oid', 'p'),
+    22 => array('oid', 'p')
   );
 
   static $algorithms = array(
@@ -1497,7 +1514,8 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
       17 => 'DSA',
       18 => 'ECC',
       19 => 'ECDSA',
-      21 => 'DH'
+      21 => 'DH',
+      22 => 'EdDSA'
     );
 
 }
@@ -1547,6 +1565,9 @@ class OpenPGP_SecretKeyPacket extends OpenPGP_PublicKeyPacket {
      3 => array('d', 'p', 'q', 'u'), // RSA-S
     16 => array('x'),                // ELG-E
     17 => array('x'),                // DSA
+    18 => array('x'),                // ECDH
+    19 => array('x'),                // ECDSA
+    22 => array('x'),                // EdDSA
   );
 
   function key_from_input() {
