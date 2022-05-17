@@ -379,24 +379,34 @@ class OpenPGP_Message implements IteratorAggregate, ArrayAccess {
 
   // IteratorAggregate interface
 
+  // function getIterator(): \Traversable { // when php 5 support is dropped
+  #[\ReturnTypeWillChange]
   function getIterator() {
     return new ArrayIterator($this->packets);
   }
 
   // ArrayAccess interface
 
+  // function offsetExists($offset): bool // when php 5 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetExists($offset) {
     return isset($this->packets[$offset]);
   }
 
+  // function offsetGet($offset): mixed // when php 7.4 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetGet($offset) {
     return $this->packets[$offset];
   }
 
+  // function offsetSet($offset, $value): void // when php 5 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetSet($offset, $value) {
-    return is_null($offset) ? $this->packets[] = $value : $this->packets[$offset] = $value;
+    is_null($offset) ? $this->packets[] = $value : $this->packets[$offset] = $value;
   }
 
+  // function offsetUnset($offset): void // when php 5 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetUnset($offset) {
     unset($this->packets[$offset]);
   }
@@ -421,7 +431,7 @@ class OpenPGP_Packet {
 
   /**
    * Parses an OpenPGP packet.
-   * 
+   *
    * Partial body lengths based on https://github.com/toofishes/python-pgpdump/blob/master/pgpdump/packet.py
    *
    * @see http://tools.ietf.org/html/rfc4880#section-4.2
@@ -559,7 +569,7 @@ class OpenPGP_Packet {
    */
   function read_unpacked($count, $format) {
     $unpacked = unpack($format, $this->read_bytes($count));
-    return reset($unpacked);
+    return is_array($unpacked) ? reset($unpacked) : NULL;
   }
 
   function read_byte() {
@@ -1377,6 +1387,9 @@ class OpenPGP_PublicKeyPacket extends OpenPGP_Packet {
         if(strtoupper($p->issuer()) == $keyid16) {
           $sigs[] = $p;
         } else {
+          if(!is_array($p->hashed_subpackets)) {
+              break;
+          }
           foreach(array_merge($p->hashed_subpackets, $p->unhashed_subpackets) as $s) {
             if($s instanceof OpenPGP_SignaturePacket_EmbeddedSignaturePacket && strtoupper($s->issuer()) == $keyid16) {
               $sigs[] = $p;
@@ -1677,25 +1690,33 @@ class OpenPGP_CompressedDataPacket extends OpenPGP_Packet implements IteratorAgg
   }
 
   // IteratorAggregate interface
-
+  // function getIterator(): \Traversable { // when PHP 5 support is dropped
+  #[\ReturnTypeWillChange]
   function getIterator() {
     return new ArrayIterator($this->data->packets);
   }
 
   // ArrayAccess interface
-
+  // function offsetExists($offset): bool {  // when PHP 5 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetExists($offset) {
     return isset($this->data[$offset]);
   }
 
+  // function offsetGet($offset): mixed { // when PHP 7 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetGet($offset) {
     return $this->data[$offset];
   }
 
+  // function offsetSet($offset, $value): void { // when PHP 5 support is dropped
+  #[\ReturnTypeWillChange]
   function offsetSet($offset, $value) {
-    return is_null($offset) ? $this->data[] = $value : $this->data[$offset] = $value;
+    is_null($offset) ? $this->data[] = $value : $this->data[$offset] = $value;
   }
 
+  #[\ReturnTypeWillChange]
+  // function offsetUnset($offset): void { // PHP 5 support is dropped
   function offsetUnset($offset) {
     unset($this->data[$offset]);
   }
