@@ -51,7 +51,8 @@ class OpenPGP {
         $pos2 = strpos($text, "-----END");
         if ($pos2 === FALSE) return NULL;
       }
-      return base64_decode($text = substr($text, $pos1, $pos2 - $pos1));
+      $text = substr($text, $pos1, $pos2 - $pos1);
+      return base64_decode($text, true);
     }
   }
 
