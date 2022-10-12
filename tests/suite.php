@@ -437,3 +437,15 @@ class Signature extends TestCase {
     $this->oneIssuer("000083-002.sig", "BD7BA7BC5547FD09");
   }
 }
+
+class Armor extends TestCase {
+  public function testRoundTrip() {
+    $bytes = "abcd\0\xff";
+    $this->assertEquals($bytes, OpenPGP::unarmor(OpenPGP::enarmor($bytes), 'MESSAGE'));
+  }
+
+  public function testInvalidBase64() {
+    $input = OpenPGP::header('MESSAGE') . "\n\nY~WJjZAD/\n=PE3Q\n" . OpenPGP::footer('MESSAGE');
+    $this->assertEquals(false, OpenPGP::unarmor($input, 'MESSAGE'));
+  }
+}
